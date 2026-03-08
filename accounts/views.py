@@ -37,7 +37,7 @@ class RegisterView(APIView):
 
 
 class UserListView(generics.ListAPIView):
-    """List all users for trainer/admin usage."""
+    """List all users for authenticated usage."""
 
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -128,7 +128,6 @@ def profile_view(request):
             "email": user.email,
             "is_student": user.is_student,
             "is_expert": user.is_expert,
-            "is_trainer": user.is_trainer,
             "major": student_profile.major if student_profile else "",
             "current_status": student_profile.current_status if student_profile else "",
         }

@@ -7,14 +7,8 @@ echo "Register student..."
 curl -s -X POST "$BASE_URL/api/auth/register/" -H "Content-Type: application/json" \
   -d '{"username":"student1","password":"pass12345","email":"student1@example.com","role":"student","major":"IT"}' >/dev/null
 
-echo "Register trainer..."
-curl -s -X POST "$BASE_URL/api/auth/register/" -H "Content-Type: application/json" \
-  -d '{"username":"trainer1","password":"pass12345","email":"trainer1@example.com","role":"trainer"}' >/dev/null
-
 STUDENT_TOKEN=$(curl -s -X POST "$BASE_URL/api/auth/token/" -H "Content-Type: application/json" \
   -d '{"username":"student1","password":"pass12345"}' | python -c "import sys, json; print(json.load(sys.stdin)['access'])")
-TRAINER_TOKEN=$(curl -s -X POST "$BASE_URL/api/auth/token/" -H "Content-Type: application/json" \
-  -d '{"username":"trainer1","password":"pass12345"}' | python -c "import sys, json; print(json.load(sys.stdin)['access'])")
 
 CONVERSATION_ID=$(curl -s -X POST "$BASE_URL/api/interview/start/" \
   -H "Authorization: Bearer $STUDENT_TOKEN" -H "Content-Type: application/json" -d '{}' | \
@@ -51,10 +45,6 @@ PROOF_ID=$(curl -s -X POST "$BASE_URL/api/sessions/$SESSION_ID/complete/" \
   python -c "import sys, json; print(json.load(sys.stdin)['id'])")
 
 curl -s -X GET "$BASE_URL/api/proofs/$PROOF_ID/analysis/" -H "Authorization: Bearer $STUDENT_TOKEN"
-
-curl -s -X POST "$BASE_URL/api/reviews/" \
-  -H "Authorization: Bearer $TRAINER_TOKEN" -H "Content-Type: application/json" \
-  -d "{\"proof\":$PROOF_ID,\"is_bug_confirmed\":true,\"notes\":\"Confirmed bug\"}"
 
 echo
 echo "Demo flow completed. Proof ID: $PROOF_ID"

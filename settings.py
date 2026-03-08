@@ -27,7 +27,6 @@ INSTALLED_APPS = [
     "ai",
     "scheduling",
     "proofs",
-    "reviews",
 ]
 
 MIDDLEWARE = [

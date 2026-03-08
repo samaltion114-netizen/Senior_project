@@ -17,7 +17,6 @@ Production-oriented Django 4.2 + DRF backend for the Nahd senior project scenari
 - `ai`: interview expert-system, tagging/checklists, time estimate, event logs, Celery tasks
 - `scheduling`: optimized session allocation
 - `proofs`: session completion, proof upload/analysis, programming questions, todos, challenges
-- `reviews`: trainer/admin proof review
 
 ## Run With Docker
 ```bash
@@ -45,7 +44,7 @@ bash scripts/demo_flow.sh
 ```
 
 Uses `tests/fixtures/screenshot1.png` and executes:
-register -> interview -> objective -> tasks -> schedule -> complete session -> proof analysis -> trainer review.
+register -> interview -> objective -> tasks -> schedule -> complete session -> proof analysis.
 
 ## Environment Variables
 - `DEBUG`
@@ -86,7 +85,6 @@ No secrets are committed.
 ### 5) Proof Verification + Bug Detection
 - `POST /api/sessions/{id}/complete/` (multipart image + explanation)
 - `GET /api/proofs/{id}/analysis/`
-- `POST /api/reviews/` (trainer confirms bug and escalates severity)
 
 ## Local Weight Models (Your Own Weights)
 
@@ -133,7 +131,6 @@ curl -X POST http://localhost/api/ai/models/select/ \
 - `POST /api/schedule/optimize/`
 - `POST /api/sessions/{id}/complete/`
 - `GET /api/proofs/{id}/analysis/`
-- `POST /api/reviews/`
 - `GET /api/challenges/`
 
 ## Professional Non-AI Features Added
@@ -220,7 +217,7 @@ See `docs/diagrams/README.md` for:
 
 ## Security Notes
 - JWT authentication via SimpleJWT.
-- Role checks for student/trainer endpoints.
+- Role checks for student endpoints.
 - Upload validation (mime + size).
 - Interview endpoint throttle enabled.
 - API keys expected from environment variables only.

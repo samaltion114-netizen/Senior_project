@@ -7,9 +7,9 @@ from accounts.models import EmailVerificationToken, ExpertProfile, PasswordReset
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ("username", "email", "is_email_verified", "is_student", "is_expert", "is_trainer", "is_staff")
+    list_display = ("username", "email", "is_email_verified", "is_student", "is_expert", "is_staff")
     fieldsets = UserAdmin.fieldsets + (
-        ("Nahd Roles", {"fields": ("is_student", "is_expert", "is_trainer")}),
+        ("Nahd Roles", {"fields": ("is_student", "is_expert")}),
     )
 
 

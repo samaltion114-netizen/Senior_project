@@ -4,14 +4,13 @@
 
 ### Added
 - Full Django project scaffold: `nahd_backend`
-- Apps: `accounts`, `core`, `ai`, `scheduling`, `proofs`, `reviews`
-- Custom `User` model with role flags (`is_student`, `is_expert`, `is_trainer`)
+- Apps: `accounts`, `core`, `ai`, `scheduling`, `proofs`
+- Custom `User` model with role flags (`is_student`, `is_expert`)
 - Domain models:
   - `StudentProfile`, `ExpertProfile`
   - `Objective`, `Task`
   - `Session`
   - `Proof`, `ProgrammingQuestion`, `TodoItem`, `Challenge`
-  - `AdminReview`
   - `AIEventLog`, `InterviewConversation`, `InterviewMessage`
 - API endpoints for:
   - registration and JWT auth
@@ -21,7 +20,6 @@
   - schedule optimization
   - session completion with proof upload
   - proof analysis retrieval
-  - trainer review
   - challenge list
   - AI tagging/checklist (informatics/legal)
   - standalone time estimate

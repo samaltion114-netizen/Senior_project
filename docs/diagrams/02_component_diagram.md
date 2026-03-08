@@ -4,12 +4,10 @@
 flowchart LR
   subgraph Clients
     Student[Student Client]
-    Trainer[Trainer/Admin Client]
     Expert[Expert Client]
   end
 
   Student --> API
-  Trainer --> API
   Expert --> API
 
   subgraph Django["Django Backend (Gunicorn)"]
@@ -21,7 +19,6 @@ flowchart LR
       AI[ai app]
       SCH[scheduling app]
       PRF[proofs app]
-      REV[reviews app]
     end
 
     API --> ACC
@@ -29,12 +26,10 @@ flowchart LR
     API --> AI
     API --> SCH
     API --> PRF
-    API --> REV
 
     AI --> AISVC[ai/services.py]
     PRF --> PRFSVC[proofs/services.py]
     PRF --> CELERYTASK[ai/tasks.py]
-    REV --> PRF
     SCH --> CORE
     CORE --> AISVC
   end
@@ -52,7 +47,6 @@ flowchart LR
   AI --> DB
   SCH --> DB
   PRF --> DB
-  REV --> DB
 
   PRF --> MEDIA
   CELERYTASK --> REDIS

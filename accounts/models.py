@@ -22,7 +22,6 @@ class User(AbstractUser):
 
     is_student = models.BooleanField(default=False)
     is_expert = models.BooleanField(default=False)
-    is_trainer = models.BooleanField(default=False)
     is_email_verified = models.BooleanField(default=False)
 
     def __str__(self) -> str:

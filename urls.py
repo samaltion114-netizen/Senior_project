@@ -15,7 +15,6 @@ api_patterns = [
     path("", include("ai.urls")),
     path("", include("scheduling.urls")),
     path("", include("proofs.urls")),
-    path("", include("reviews.urls")),
 ]
 
 urlpatterns = [

@@ -9,7 +9,6 @@ erDiagram
       bool is_email_verified
       bool is_student
       bool is_expert
-      bool is_trainer
     }
 
     STUDENT_PROFILE {
@@ -100,15 +99,6 @@ erDiagram
       string difficulty
       date scheduled_date
       bool completed
-      datetime created_at
-    }
-
-    ADMIN_REVIEW {
-      bigint id PK
-      bigint proof_id FK
-      bigint reviewer_id FK
-      bool is_bug_confirmed
-      text notes
       datetime created_at
     }
 
@@ -260,8 +250,6 @@ erDiagram
     PROOF ||--o{ PROGRAMMING_QUESTION : generates
     PROGRAMMING_QUESTION ||--o{ TODO_ITEM : contains
     USER ||--o{ CHALLENGE : receives
-    PROOF ||--o{ ADMIN_REVIEW : reviewed_by
-    USER ||--o{ ADMIN_REVIEW : writes
     USER ||--o{ INTERVIEW_CONVERSATION : starts
     INTERVIEW_CONVERSATION ||--o{ INTERVIEW_MESSAGE : includes
     USER ||--o{ AI_EVENT_LOG : logs
