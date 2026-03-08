@@ -117,6 +117,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "Nahd Backend API",
     "DESCRIPTION": "Senior project backend for Nahd platform.",
     "VERSION": "1.0.0",
+    "COMPONENT_SPLIT_REQUEST": True,
     "SWAGGER_UI_SETTINGS": {
         "persistAuthorization": True,
     },

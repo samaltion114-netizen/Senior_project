@@ -91,6 +91,11 @@ class PortfolioAssetSerializer(serializers.ModelSerializer):
         read_only_fields = ("project", "created_at")
 
 
+class PortfolioAssetUploadSerializer(serializers.Serializer):
+    file = serializers.FileField()
+    caption = serializers.CharField(max_length=255, required=False, allow_blank=True)
+
+
 class PortfolioProjectSerializer(serializers.ModelSerializer):
     assets = PortfolioAssetSerializer(many=True, read_only=True)
 

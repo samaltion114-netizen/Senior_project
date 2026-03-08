@@ -8,6 +8,7 @@ from django.db.models import Avg, Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -22,6 +23,7 @@ from core.serializers import (
     ObjectiveSerializer,
     PerformanceMetricSerializer,
     PortfolioAssetSerializer,
+    PortfolioAssetUploadSerializer,
     PortfolioProjectSerializer,
     ProgressSnapshotSerializer,
     TaskSerializer,
@@ -218,11 +220,15 @@ class PortfolioAssetCreateView(APIView):
     """Upload asset to one portfolio project."""
 
     permission_classes = [permissions.IsAuthenticated, IsStudent]
+    parser_classes = [MultiPartParser, FormParser]
 
-    @extend_schema(request=PortfolioAssetSerializer, responses={201: PortfolioAssetSerializer})
+    @extend_schema(request=PortfolioAssetUploadSerializer, responses={201: PortfolioAssetSerializer})
     def post(self, request, id: int, *args, **kwargs) -> Response:
         project = get_object_or_404(PortfolioProject, id=id, student=request.user)
-        serializer = PortfolioAssetSerializer(data=request.data)
+        serializer = PortfolioAssetUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        asset = serializer.save(project=project)
+        asset = project.assets.create(
+            file=serializer.validated_data["file"],
+            caption=serializer.validated_data.get("caption", ""),
+        )
         return Response(PortfolioAssetSerializer(asset).data, status=status.HTTP_201_CREATED)
