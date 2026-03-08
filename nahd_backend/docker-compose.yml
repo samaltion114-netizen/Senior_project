@@ -1,0 +1,79 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nahd}
+      POSTGRES_USER: ${POSTGRES_USER:-nahd}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nahd}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nahd} -d ${POSTGRES_DB:-nahd}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+
+  web:
+    build: .
+    command: sh -c "python manage.py migrate && python manage.py loaddata fixtures/initial_data.json || true && gunicorn nahd_backend.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+    volumes:
+      - .:/app
+      - ./ai_model_weights:/app/ai_model_weights
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    env_file:
+      - .env.example
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    build: .
+    command: celery -A nahd_backend worker -l info
+    volumes:
+      - .:/app
+      - ./ai_model_weights:/app/ai_model_weights
+      - media_data:/app/media
+    env_file:
+      - .env.example
+    depends_on:
+      - web
+      - redis
+
+  beat:
+    build: .
+    command: celery -A nahd_backend beat -l info
+    volumes:
+      - .:/app
+      - ./ai_model_weights:/app/ai_model_weights
+    env_file:
+      - .env.example
+    depends_on:
+      - worker
+
+  nginx:
+    image: nginx:1.27
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  redis_data:
+  media_data:
+  static_data:

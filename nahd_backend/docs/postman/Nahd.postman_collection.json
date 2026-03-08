@@ -1,0 +1,81 @@
+{
+  "info": {
+    "name": "Nahd Backend Demo",
+    "_postman_id": "d02f4fa8-0425-45c9-9e81-b5cbf3fc2f98",
+    "description": "Demo flow endpoints for nahd_backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Register Student",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{base_url}}/api/auth/register/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\":\"student1\",\"password\":\"pass12345\",\"email\":\"student1@example.com\",\"role\":\"student\",\"major\":\"IT\"}"
+        }
+      }
+    },
+    {
+      "name": "Token",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{base_url}}/api/auth/token/",
+        "body": {"mode": "raw", "raw": "{\"username\":\"student1\",\"password\":\"pass12345\"}"}
+      }
+    },
+    {
+      "name": "Interview Start",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": "{{base_url}}/api/interview/start/"
+      }
+    },
+    {
+      "name": "Interview Message",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Authorization", "value": "Bearer {{token}}"},
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "url": "{{base_url}}/api/interview/message/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"conversation_id\":1,\"message\":\"I want training in AI backend internship\"}"
+        }
+      }
+    },
+    {
+      "name": "Objectives",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": "{{base_url}}/api/objectives/"
+      }
+    },
+    {
+      "name": "Schedule Optimize",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Authorization", "value": "Bearer {{token}}"},
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "url": "{{base_url}}/api/schedule/optimize/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"objective_id\":1,\"weekly_availability\":{\"monday\":[{\"start\":\"18:00\",\"end\":\"20:00\"}]},\"max_daily_minutes\":90,\"break_minutes\":10}"
+        }
+      }
+    }
+  ],
+  "variable": [
+    {"key": "base_url", "value": "http://localhost"},
+    {"key": "token", "value": ""}
+  ]
+}
