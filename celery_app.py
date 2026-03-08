@@ -5,8 +5,8 @@ import os
 
 from celery import Celery
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "nahd_backend.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 
-app = Celery("nahd_backend")
+app = Celery("project_root")
 app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()

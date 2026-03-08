@@ -23,7 +23,7 @@ services:
 
   web:
     build: .
-    command: sh -c "python manage.py migrate && python manage.py loaddata fixtures/initial_data.json || true && gunicorn nahd_backend.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+    command: sh -c "python manage.py migrate && python manage.py loaddata fixtures/initial_data.json || true && gunicorn wsgi:application --bind 0.0.0.0:8000 --workers 3"
     volumes:
       - .:/app
       - ./ai_model_weights:/app/ai_model_weights
@@ -39,7 +39,7 @@ services:
 
   worker:
     build: .
-    command: celery -A nahd_backend worker -l info
+    command: celery -A celery_app worker -l info
     volumes:
       - .:/app
       - ./ai_model_weights:/app/ai_model_weights
@@ -52,7 +52,7 @@ services:
 
   beat:
     build: .
-    command: celery -A nahd_backend beat -l info
+    command: celery -A celery_app beat -l info
     volumes:
       - .:/app
       - ./ai_model_weights:/app/ai_model_weights
