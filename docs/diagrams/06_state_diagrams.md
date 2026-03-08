@@ -23,8 +23,5 @@ stateDiagram-v2
   [*] --> pending: proof created
   pending --> done: analysis saved
   pending --> failed: analysis error
-  done --> reviewed: trainer submits review
-  reviewed --> escalated: bug confirmed
-  reviewed --> closed: bug not confirmed
   failed --> pending: retry analysis
 ```

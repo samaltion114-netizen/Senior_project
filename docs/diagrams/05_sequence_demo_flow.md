@@ -4,7 +4,6 @@
 sequenceDiagram
   autonumber
   actor Student
-  actor Trainer
   participant API as Django API
   participant AI as AI Service
   participant DB as Database
@@ -45,10 +44,6 @@ sequenceDiagram
   Student->>API: GET /api/proofs/{id}/analysis/
   API->>DB: Fetch proof + generated artifacts
   API-->>Student: analysis + programming questions + todos
-
-  Trainer->>API: POST /api/reviews/
-  API->>DB: Create AdminReview
-  API->>DB: Escalate ProgrammingQuestion severity=high (if confirmed)
 
   CW->>AI: generate_daily_challenges_task
   AI-->>CW: adaptive challenges

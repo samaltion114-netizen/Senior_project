@@ -14,13 +14,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DailyChallengeRequest'
+              $ref: '#/components/schemas/DailyChallengeRequestRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/DailyChallengeRequest'
+              $ref: '#/components/schemas/DailyChallengeRequestRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/DailyChallengeRequest'
+              $ref: '#/components/schemas/DailyChallengeRequestRequest'
         required: true
       security:
       - jwtAuth: []
@@ -43,13 +43,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ModelWeightSelect'
+              $ref: '#/components/schemas/ModelWeightSelectRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/ModelWeightSelect'
+              $ref: '#/components/schemas/ModelWeightSelectRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ModelWeightSelect'
+              $ref: '#/components/schemas/ModelWeightSelectRequest'
         required: true
       security:
       - jwtAuth: []
@@ -84,13 +84,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaggingChecklist'
+              $ref: '#/components/schemas/TaggingChecklistRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TaggingChecklist'
+              $ref: '#/components/schemas/TaggingChecklistRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TaggingChecklist'
+              $ref: '#/components/schemas/TaggingChecklistRequest'
         required: true
       security:
       - jwtAuth: []
@@ -113,13 +113,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaggingChecklist'
+              $ref: '#/components/schemas/TaggingChecklistRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TaggingChecklist'
+              $ref: '#/components/schemas/TaggingChecklistRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TaggingChecklist'
+              $ref: '#/components/schemas/TaggingChecklistRequest'
         required: true
       security:
       - jwtAuth: []
@@ -142,13 +142,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TimeEstimateRequest'
+              $ref: '#/components/schemas/TimeEstimateRequestRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TimeEstimateRequest'
+              $ref: '#/components/schemas/TimeEstimateRequestRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TimeEstimateRequest'
+              $ref: '#/components/schemas/TimeEstimateRequestRequest'
         required: true
       security:
       - jwtAuth: []
@@ -171,13 +171,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PasswordResetConfirm'
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PasswordResetConfirm'
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PasswordResetConfirm'
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
         required: true
       security:
       - jwtAuth: []
@@ -201,13 +201,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PasswordResetRequest'
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PasswordResetRequest'
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PasswordResetRequest'
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
         required: true
       security:
       - jwtAuth: []
@@ -231,13 +231,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Register'
+              $ref: '#/components/schemas/RegisterRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Register'
+              $ref: '#/components/schemas/RegisterRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Register'
+              $ref: '#/components/schemas/RegisterRequest'
         required: true
       security:
       - jwtAuth: []
@@ -262,13 +262,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/TokenObtainPairRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/TokenObtainPairRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/TokenObtainPairRequest'
         required: true
       security:
       - BearerAuth: []
@@ -291,13 +291,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenRefresh'
+              $ref: '#/components/schemas/TokenRefreshRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TokenRefresh'
+              $ref: '#/components/schemas/TokenRefreshRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TokenRefresh'
+              $ref: '#/components/schemas/TokenRefreshRequest'
         required: true
       security:
       - BearerAuth: []
@@ -311,7 +311,7 @@ paths:
   /api/auth/users/:
     get:
       operationId: api_auth_users_list
-      description: List all users for trainer/admin usage.
+      description: List all users for authenticated usage.
       tags:
       - api
       security:
@@ -336,13 +336,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EmailVerificationConfirm'
+              $ref: '#/components/schemas/EmailVerificationConfirmRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/EmailVerificationConfirm'
+              $ref: '#/components/schemas/EmailVerificationConfirmRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/EmailVerificationConfirm'
+              $ref: '#/components/schemas/EmailVerificationConfirmRequest'
         required: true
       security:
       - jwtAuth: []
@@ -366,13 +366,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EmailVerificationRequest'
+              $ref: '#/components/schemas/EmailVerificationRequestRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/EmailVerificationRequest'
+              $ref: '#/components/schemas/EmailVerificationRequestRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/EmailVerificationRequest'
+              $ref: '#/components/schemas/EmailVerificationRequestRequest'
         required: true
       security:
       - jwtAuth: []
@@ -446,13 +446,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InterviewMessage'
+              $ref: '#/components/schemas/InterviewMessageRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/InterviewMessage'
+              $ref: '#/components/schemas/InterviewMessageRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/InterviewMessage'
+              $ref: '#/components/schemas/InterviewMessageRequest'
         required: true
       security:
       - jwtAuth: []
@@ -509,13 +509,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Objective'
+              $ref: '#/components/schemas/ObjectiveRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Objective'
+              $ref: '#/components/schemas/ObjectiveRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Objective'
+              $ref: '#/components/schemas/ObjectiveRequest'
         required: true
       security:
       - jwtAuth: []
@@ -561,13 +561,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTask'
+              $ref: '#/components/schemas/CreateTaskRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/CreateTask'
+              $ref: '#/components/schemas/CreateTaskRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/CreateTask'
+              $ref: '#/components/schemas/CreateTaskRequest'
         required: true
       security:
       - jwtAuth: []
@@ -618,13 +618,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PortfolioProject'
+              $ref: '#/components/schemas/PortfolioProjectRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PortfolioProject'
+              $ref: '#/components/schemas/PortfolioProjectRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PortfolioProject'
+              $ref: '#/components/schemas/PortfolioProjectRequest'
         required: true
       security:
       - jwtAuth: []
@@ -652,10 +652,10 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PortfolioAssetUpload'
+              $ref: '#/components/schemas/PortfolioAssetUploadRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PortfolioAssetUpload'
+              $ref: '#/components/schemas/PortfolioAssetUploadRequest'
         required: true
       security:
       - jwtAuth: []
@@ -704,13 +704,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PortfolioProject'
+              $ref: '#/components/schemas/PortfolioProjectRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PortfolioProject'
+              $ref: '#/components/schemas/PortfolioProjectRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PortfolioProject'
+              $ref: '#/components/schemas/PortfolioProjectRequest'
         required: true
       security:
       - jwtAuth: []
@@ -737,13 +737,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedPortfolioProject'
+              $ref: '#/components/schemas/PatchedPortfolioProjectRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedPortfolioProject'
+              $ref: '#/components/schemas/PatchedPortfolioProjectRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedPortfolioProject'
+              $ref: '#/components/schemas/PatchedPortfolioProjectRequest'
       security:
       - jwtAuth: []
       - BearerAuth: []
@@ -789,30 +789,35 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/reviews/:
-    post:
-      operationId: api_reviews_create
-      description: Create trainer review and optionally escalate issue severity.
-      tags:
-      - api
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          description: No response body
   /api/schedule/optimize/:
     post:
       operationId: api_schedule_optimize_create
       description: Generate optimized sessions from availability and tasks.
       tags:
       - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeeklyAvailabilityRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WeeklyAvailabilityRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WeeklyAvailabilityRequest'
+        required: true
       security:
       - jwtAuth: []
       - BearerAuth: []
       responses:
-        '200':
-          description: No response body
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/schema/:
     get:
       operationId: api_schema_retrieve
@@ -970,12 +975,25 @@ paths:
         required: true
       tags:
       - api
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompleteSessionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompleteSessionRequest'
+        required: true
       security:
       - jwtAuth: []
       - BearerAuth: []
       responses:
-        '200':
-          description: No response body
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Proof'
+          description: ''
   /api/v1/ai/challenges/generate/:
     post:
       operationId: api_v1_ai_challenges_generate_create
@@ -986,13 +1004,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DailyChallengeRequest'
+              $ref: '#/components/schemas/DailyChallengeRequestRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/DailyChallengeRequest'
+              $ref: '#/components/schemas/DailyChallengeRequestRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/DailyChallengeRequest'
+              $ref: '#/components/schemas/DailyChallengeRequestRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1015,13 +1033,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ModelWeightSelect'
+              $ref: '#/components/schemas/ModelWeightSelectRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/ModelWeightSelect'
+              $ref: '#/components/schemas/ModelWeightSelectRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ModelWeightSelect'
+              $ref: '#/components/schemas/ModelWeightSelectRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1056,13 +1074,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaggingChecklist'
+              $ref: '#/components/schemas/TaggingChecklistRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TaggingChecklist'
+              $ref: '#/components/schemas/TaggingChecklistRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TaggingChecklist'
+              $ref: '#/components/schemas/TaggingChecklistRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1085,13 +1103,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaggingChecklist'
+              $ref: '#/components/schemas/TaggingChecklistRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TaggingChecklist'
+              $ref: '#/components/schemas/TaggingChecklistRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TaggingChecklist'
+              $ref: '#/components/schemas/TaggingChecklistRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1114,13 +1132,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TimeEstimateRequest'
+              $ref: '#/components/schemas/TimeEstimateRequestRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TimeEstimateRequest'
+              $ref: '#/components/schemas/TimeEstimateRequestRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TimeEstimateRequest'
+              $ref: '#/components/schemas/TimeEstimateRequestRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1143,13 +1161,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PasswordResetConfirm'
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PasswordResetConfirm'
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PasswordResetConfirm'
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1173,13 +1191,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PasswordResetRequest'
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PasswordResetRequest'
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PasswordResetRequest'
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1203,13 +1221,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Register'
+              $ref: '#/components/schemas/RegisterRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Register'
+              $ref: '#/components/schemas/RegisterRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Register'
+              $ref: '#/components/schemas/RegisterRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1234,13 +1252,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/TokenObtainPairRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/TokenObtainPairRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/TokenObtainPairRequest'
         required: true
       security:
       - BearerAuth: []
@@ -1263,13 +1281,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenRefresh'
+              $ref: '#/components/schemas/TokenRefreshRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TokenRefresh'
+              $ref: '#/components/schemas/TokenRefreshRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TokenRefresh'
+              $ref: '#/components/schemas/TokenRefreshRequest'
         required: true
       security:
       - BearerAuth: []
@@ -1283,7 +1301,7 @@ paths:
   /api/v1/auth/users/:
     get:
       operationId: api_v1_auth_users_list
-      description: List all users for trainer/admin usage.
+      description: List all users for authenticated usage.
       tags:
       - api
       security:
@@ -1308,13 +1326,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EmailVerificationConfirm'
+              $ref: '#/components/schemas/EmailVerificationConfirmRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/EmailVerificationConfirm'
+              $ref: '#/components/schemas/EmailVerificationConfirmRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/EmailVerificationConfirm'
+              $ref: '#/components/schemas/EmailVerificationConfirmRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1338,13 +1356,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EmailVerificationRequest'
+              $ref: '#/components/schemas/EmailVerificationRequestRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/EmailVerificationRequest'
+              $ref: '#/components/schemas/EmailVerificationRequestRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/EmailVerificationRequest'
+              $ref: '#/components/schemas/EmailVerificationRequestRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1418,13 +1436,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InterviewMessage'
+              $ref: '#/components/schemas/InterviewMessageRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/InterviewMessage'
+              $ref: '#/components/schemas/InterviewMessageRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/InterviewMessage'
+              $ref: '#/components/schemas/InterviewMessageRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1481,13 +1499,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Objective'
+              $ref: '#/components/schemas/ObjectiveRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Objective'
+              $ref: '#/components/schemas/ObjectiveRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Objective'
+              $ref: '#/components/schemas/ObjectiveRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1533,13 +1551,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTask'
+              $ref: '#/components/schemas/CreateTaskRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/CreateTask'
+              $ref: '#/components/schemas/CreateTaskRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/CreateTask'
+              $ref: '#/components/schemas/CreateTaskRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1590,13 +1608,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PortfolioProject'
+              $ref: '#/components/schemas/PortfolioProjectRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PortfolioProject'
+              $ref: '#/components/schemas/PortfolioProjectRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PortfolioProject'
+              $ref: '#/components/schemas/PortfolioProjectRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1624,10 +1642,10 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PortfolioAssetUpload'
+              $ref: '#/components/schemas/PortfolioAssetUploadRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PortfolioAssetUpload'
+              $ref: '#/components/schemas/PortfolioAssetUploadRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1676,13 +1694,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PortfolioProject'
+              $ref: '#/components/schemas/PortfolioProjectRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PortfolioProject'
+              $ref: '#/components/schemas/PortfolioProjectRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PortfolioProject'
+              $ref: '#/components/schemas/PortfolioProjectRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1709,13 +1727,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedPortfolioProject'
+              $ref: '#/components/schemas/PatchedPortfolioProjectRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedPortfolioProject'
+              $ref: '#/components/schemas/PatchedPortfolioProjectRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedPortfolioProject'
+              $ref: '#/components/schemas/PatchedPortfolioProjectRequest'
       security:
       - jwtAuth: []
       - BearerAuth: []
@@ -1761,30 +1779,35 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/v1/reviews/:
-    post:
-      operationId: api_v1_reviews_create
-      description: Create trainer review and optionally escalate issue severity.
-      tags:
-      - api
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          description: No response body
   /api/v1/schedule/optimize/:
     post:
       operationId: api_v1_schedule_optimize_create
       description: Generate optimized sessions from availability and tasks.
       tags:
       - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeeklyAvailabilityRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WeeklyAvailabilityRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WeeklyAvailabilityRequest'
+        required: true
       security:
       - jwtAuth: []
       - BearerAuth: []
       responses:
-        '200':
-          description: No response body
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/sessions/{id}/complete/:
     post:
       operationId: api_v1_sessions_complete_create
@@ -1797,14 +1820,37 @@ paths:
         required: true
       tags:
       - api
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompleteSessionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompleteSessionRequest'
+        required: true
       security:
       - jwtAuth: []
       - BearerAuth: []
       responses:
-        '200':
-          description: No response body
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Proof'
+          description: ''
 components:
   schemas:
+    AnalysisStatusEnum:
+      enum:
+      - pending
+      - done
+      - failed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `done` - Done
+        * `failed` - Failed
     CapabilityEnum:
       enum:
       - all
@@ -1823,11 +1869,25 @@ components:
         * `scheduling` - scheduling
         * `proof_analysis` - proof_analysis
         * `challenge_generation` - challenge_generation
-    CreateTask:
+    CompleteSessionRequest:
+      type: object
+      properties:
+        image:
+          type: string
+          format: binary
+        explanation:
+          type: string
+          minLength: 1
+          maxLength: 5000
+      required:
+      - explanation
+      - image
+    CreateTaskRequest:
       type: object
       properties:
         title:
           type: string
+          minLength: 1
           maxLength: 255
         description:
           type: string
@@ -1840,7 +1900,7 @@ components:
           type: string
       required:
       - title
-    DailyChallengeRequest:
+    DailyChallengeRequestRequest:
       type: object
       properties:
         domain:
@@ -1863,29 +1923,32 @@ components:
       description: |-
         * `informatics` - informatics
         * `law` - law
-    EmailVerificationConfirm:
+    EmailVerificationConfirmRequest:
       type: object
       properties:
         token:
           type: string
+          minLength: 1
           maxLength: 128
       required:
       - token
-    EmailVerificationRequest:
+    EmailVerificationRequestRequest:
       type: object
       properties:
         email:
           type: string
           format: email
+          minLength: 1
       required:
       - email
-    InterviewMessage:
+    InterviewMessageRequest:
       type: object
       properties:
         conversation_id:
           type: integer
         message:
           type: string
+          minLength: 1
           maxLength: 2000
       required:
       - conversation_id
@@ -1900,7 +1963,7 @@ components:
         * `beginner` - beginner
         * `intermediate` - intermediate
         * `advanced` - advanced
-    ModelWeightSelect:
+    ModelWeightSelectRequest:
       type: object
       properties:
         capability:
@@ -1911,9 +1974,11 @@ components:
           default: local
         model_name:
           type: string
+          minLength: 1
           maxLength: 120
         weight_path:
           type: string
+          minLength: 1
           maxLength: 500
         metadata:
           type: object
@@ -1956,38 +2021,52 @@ components:
       - student
       - tasks
       - title
-    PasswordResetConfirm:
+    ObjectiveRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          minLength: 1
+        suggested_by:
+          $ref: '#/components/schemas/SuggestedByEnum'
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+      required:
+      - description
+      - title
+    PasswordResetConfirmRequest:
       type: object
       properties:
         token:
           type: string
+          minLength: 1
           maxLength: 128
         new_password:
           type: string
-          maxLength: 128
           minLength: 8
+          maxLength: 128
       required:
       - new_password
       - token
-    PasswordResetRequest:
+    PasswordResetRequestRequest:
       type: object
       properties:
         email:
           type: string
           format: email
+          minLength: 1
       required:
       - email
-    PatchedPortfolioProject:
+    PatchedPortfolioProjectRequest:
       type: object
       properties:
-        id:
-          type: integer
-          readOnly: true
-        student:
-          type: integer
-          readOnly: true
         title:
           type: string
+          minLength: 1
           maxLength: 255
         description:
           type: string
@@ -2000,11 +2079,6 @@ components:
           maxLength: 200
         visibility:
           $ref: '#/components/schemas/VisibilityEnum'
-        assets:
-          type: array
-          items:
-            $ref: '#/components/schemas/PortfolioAsset'
-          readOnly: true
     PortfolioAsset:
       type: object
       properties:
@@ -2029,12 +2103,23 @@ components:
       - file
       - id
       - project
-    PortfolioAssetUpload:
+    PortfolioAssetRequest:
       type: object
       properties:
         file:
           type: string
-          format: uri
+          format: binary
+        caption:
+          type: string
+          maxLength: 255
+      required:
+      - file
+    PortfolioAssetUploadRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
         caption:
           type: string
           maxLength: 255
@@ -2073,6 +2158,97 @@ components:
       - id
       - student
       - title
+    PortfolioProjectRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        tech_stack:
+          type: object
+          additionalProperties: {}
+        project_url:
+          type: string
+          format: uri
+          maxLength: 200
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+      required:
+      - title
+    PriorityEnum:
+      enum:
+      - low
+      - medium
+      - high
+      type: string
+      description: |-
+        * `low` - Low
+        * `medium` - Medium
+        * `high` - High
+    ProgrammingQuestion:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        severity:
+          $ref: '#/components/schemas/SeverityEnum'
+        suggested_fixes:
+          type: object
+          additionalProperties: {}
+        todo_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TodoItem'
+          readOnly: true
+      required:
+      - description
+      - id
+      - title
+      - todo_items
+    Proof:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        session:
+          type: integer
+          readOnly: true
+        image:
+          type: string
+          format: uri
+        explanation_text:
+          type: string
+        ai_analysis:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        analysis_status:
+          allOf:
+          - $ref: '#/components/schemas/AnalysisStatusEnum'
+          readOnly: true
+        programming_questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgrammingQuestion'
+          readOnly: true
+      required:
+      - ai_analysis
+      - analysis_status
+      - explanation_text
+      - id
+      - image
+      - programming_questions
+      - session
     ProviderEnum:
       enum:
       - local
@@ -2083,12 +2259,13 @@ components:
         * `local` - local
         * `openai` - openai
         * `mock` - mock
-    Register:
+    RegisterRequest:
       type: object
-      description: Register a new user as student, expert, or trainer.
+      description: Register a new user as student or expert.
       properties:
         username:
           type: string
+          minLength: 1
           description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
             only.
           pattern: ^[\w.@+-]+$
@@ -2117,6 +2294,7 @@ components:
           type: array
           items:
             type: string
+            minLength: 1
         bio:
           type: string
       required:
@@ -2127,12 +2305,20 @@ components:
       enum:
       - student
       - expert
-      - trainer
       type: string
       description: |-
         * `student` - student
         * `expert` - expert
-        * `trainer` - trainer
+    SeverityEnum:
+      enum:
+      - low
+      - medium
+      - high
+      type: string
+      description: |-
+        * `low` - Low
+        * `medium` - Medium
+        * `high` - High
     StatusEnum:
       enum:
       - draft
@@ -2153,11 +2339,12 @@ components:
         * `ai` - AI
         * `expert` - Expert
         * `student` - Student
-    TaggingChecklist:
+    TaggingChecklistRequest:
       type: object
       properties:
         text:
           type: string
+          minLength: 1
           maxLength: 6000
         domain:
           $ref: '#/components/schemas/DomainEnum'
@@ -2197,11 +2384,30 @@ components:
       - id
       - objective
       - title
-    TimeEstimateRequest:
+    TaskRequest:
       type: object
       properties:
         title:
           type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        order:
+          type: integer
+        metadata:
+          type: object
+          additionalProperties: {}
+        expected_output_text:
+          type: string
+      required:
+      - title
+    TimeEstimateRequestRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
           maxLength: 255
         description:
           type: string
@@ -2211,15 +2417,27 @@ components:
           additionalProperties: {}
       required:
       - title
+    TodoItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        done:
+          type: boolean
+      required:
+      - id
+      - title
     TokenObtainPair:
       type: object
       properties:
-        username:
-          type: string
-          writeOnly: true
-        password:
-          type: string
-          writeOnly: true
         access:
           type: string
           readOnly: true
@@ -2228,8 +2446,20 @@ components:
           readOnly: true
       required:
       - access
-      - password
       - refresh
+    TokenObtainPairRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
       - username
     TokenRefresh:
       type: object
@@ -2237,11 +2467,16 @@ components:
         access:
           type: string
           readOnly: true
+      required:
+      - access
+    TokenRefreshRequest:
+      type: object
+      properties:
         refresh:
           type: string
           writeOnly: true
+          minLength: 1
       required:
-      - access
       - refresh
     User:
       type: object
@@ -2264,8 +2499,6 @@ components:
           type: boolean
         is_expert:
           type: boolean
-        is_trainer:
-          type: boolean
         is_email_verified:
           type: boolean
       required:
@@ -2279,6 +2512,26 @@ components:
       description: |-
         * `public` - Public
         * `private` - Private
+    WeeklyAvailabilityRequest:
+      type: object
+      properties:
+        weekly_availability:
+          type: object
+          additionalProperties: {}
+        objective_id:
+          type: integer
+        max_daily_minutes:
+          type: integer
+          default: 120
+        break_minutes:
+          type: integer
+          default: 10
+        start_date:
+          type: string
+          format: date
+      required:
+      - objective_id
+      - weekly_availability
   securitySchemes:
     BearerAuth:
       type: http

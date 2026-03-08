@@ -13,10 +13,10 @@ User = get_user_model()
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    """Register a new user as student, expert, or trainer."""
+    """Register a new user as student or expert."""
 
     password = serializers.CharField(write_only=True, min_length=8)
-    role = serializers.ChoiceField(choices=["student", "expert", "trainer"])
+    role = serializers.ChoiceField(choices=["student", "expert"])
     major = serializers.CharField(required=False, allow_blank=True)
     current_status = serializers.CharField(required=False, allow_blank=True)
     goal_text = serializers.CharField(required=False, allow_blank=True)
@@ -53,7 +53,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.is_student = role == "student"
         user.is_expert = role == "expert"
-        user.is_trainer = role == "trainer"
         user.save()
 
         if user.is_student:
@@ -72,7 +71,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("id", "username", "email", "is_student", "is_expert", "is_trainer", "is_email_verified")
+        fields = ("id", "username", "email", "is_student", "is_expert", "is_email_verified")
 
 
 class EmailVerificationRequestSerializer(serializers.Serializer):

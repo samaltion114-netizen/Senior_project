@@ -24,14 +24,11 @@ def register_and_login(client: APIClient, username: str, role: str, extra: dict 
 @pytest.mark.django_db(transaction=True)
 def test_demo_flow_e2e() -> None:
     student_client = APIClient()
-    trainer_client = APIClient()
 
     student_token = register_and_login(student_client, "student1", "student", {"major": "IT"})
     register_and_login(student_client, "expert1", "expert", {"bio": "AI mentor", "expertise_tags": ["ai", "backend"]})
-    trainer_token = register_and_login(trainer_client, "trainer1", "trainer")
 
     student_client.credentials(HTTP_AUTHORIZATION=f"Bearer {student_token}")
-    trainer_client.credentials(HTTP_AUTHORIZATION=f"Bearer {trainer_token}")
 
     start = student_client.post("/api/interview/start/", {}, format="json")
     assert start.status_code == 201
@@ -112,15 +109,6 @@ def test_demo_flow_e2e() -> None:
     assert ProgrammingQuestion.objects.filter(proof_id=proof_id).exists()
     pq = ProgrammingQuestion.objects.filter(proof_id=proof_id).first()
     assert TodoItem.objects.filter(programming_question=pq).exists()
-
-    review = trainer_client.post(
-        "/api/reviews/",
-        {"proof": proof_id, "is_bug_confirmed": True, "notes": "Confirmed issue."},
-        format="json",
-    )
-    assert review.status_code == 201
-    pq.refresh_from_db()
-    assert pq.severity == "high"
 
     gen = student_client.post("/api/ai/challenges/generate/", {"domain": "informatics", "level": "beginner", "minutes": 15}, format="json")
     assert gen.status_code == 200
