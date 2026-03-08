@@ -1,0 +1,23 @@
+[
+  {
+    "model": "accounts.user",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$Rk2bYwJ2Hj2fC6$zSXnkWz5JbCtcyX3xZ5xS7hV1Qeq7v8hxx/AFDaY2Ek=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "trainer_seed",
+      "first_name": "",
+      "last_name": "",
+      "email": "trainer@example.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-01-01T00:00:00Z",
+      "is_student": false,
+      "is_expert": false,
+      "is_trainer": true,
+      "groups": [],
+      "user_permissions": []
+    }
+  }
+]
