@@ -1,4 +1,4 @@
-"""Django settings for nahd_backend."""
+"""Django settings."""
 from __future__ import annotations
 
 import os
@@ -6,7 +6,7 @@ import json
 from datetime import timedelta
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-dev-key")
 DEBUG = os.getenv("DEBUG", "1") == "1"
@@ -40,7 +40,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "nahd_backend.urls"
+ROOT_URLCONF = "urls"
 
 TEMPLATES = [
     {
@@ -58,8 +58,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "nahd_backend.wsgi.application"
-ASGI_APPLICATION = "nahd_backend.asgi.application"
+WSGI_APPLICATION = "wsgi.application"
+ASGI_APPLICATION = "asgi.application"
 
 if os.getenv("POSTGRES_HOST"):
     DATABASES = {
@@ -178,7 +178,7 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
-        "json": {"()": "nahd_backend.settings.JsonFormatter"},
+        "json": {"()": "settings.JsonFormatter"},
     },
     "handlers": {
         "console": {
