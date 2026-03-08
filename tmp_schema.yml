@@ -1,0 +1,2290 @@
+openapi: 3.0.3
+info:
+  title: Nahd Backend API
+  version: 1.0.0
+  description: Senior project backend for Nahd platform.
+paths:
+  /api/ai/challenges/generate/:
+    post:
+      operationId: api_ai_challenges_generate_create
+      description: Generate and persist daily micro challenges.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DailyChallengeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DailyChallengeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DailyChallengeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/ai/models/select/:
+    post:
+      operationId: api_ai_models_select_create
+      description: Activate one model for a specific capability.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelWeightSelect'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ModelWeightSelect'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ModelWeightSelect'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/ai/models/weights/:
+    get:
+      operationId: api_ai_models_weights_retrieve
+      description: List discovered model files and current active model selections.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/ai/tagging/informatics/:
+    post:
+      operationId: api_ai_tagging_informatics_create
+      description: Generate tags + checklist (informatics/legal).
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaggingChecklist'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TaggingChecklist'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TaggingChecklist'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/ai/tagging/legal/:
+    post:
+      operationId: api_ai_tagging_legal_create
+      description: Generate tags + checklist (informatics/legal).
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaggingChecklist'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TaggingChecklist'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TaggingChecklist'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/ai/time-estimate/:
+    post:
+      operationId: api_ai_time_estimate_create
+      description: Standalone time estimation endpoint.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeEstimateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TimeEstimateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TimeEstimateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/password-reset/confirm/:
+    post:
+      operationId: api_auth_password_reset_confirm_create
+      description: Reset password using one-time token.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/password-reset/request/:
+    post:
+      operationId: api_auth_password_reset_request_create
+      description: Issue password reset token.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/register/:
+    post:
+      operationId: api_auth_register_create
+      description: Register endpoint.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Register'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/auth/token/:
+    post:
+      operationId: api_auth_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/auth/token/refresh/:
+    post:
+      operationId: api_auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/auth/users/:
+    get:
+      operationId: api_auth_users_list
+      description: List all users for trainer/admin usage.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+          description: ''
+  /api/auth/verify-email/confirm/:
+    post:
+      operationId: api_auth_verify_email_confirm_create
+      description: Verify email using one-time token.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationConfirm'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/verify-email/request/:
+    post:
+      operationId: api_auth_verify_email_request_create
+      description: Issue a new email verification token.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/challenges/:
+    get:
+      operationId: api_challenges_retrieve
+      description: List upcoming adaptive challenges.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/dashboard/progress/:
+    get:
+      operationId: api_dashboard_progress_retrieve
+      description: Return progress dashboard summary for current student.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/health/live/:
+    get:
+      operationId: api_health_live_retrieve
+      description: Liveness probe endpoint.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/health/ready/:
+    get:
+      operationId: api_health_ready_retrieve
+      description: Readiness probe endpoint with DB check.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/interview/message/:
+    post:
+      operationId: api_interview_message_create
+      description: Send interview message and get AI expert-system response.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterviewMessage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InterviewMessage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InterviewMessage'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/interview/start/:
+    post:
+      operationId: api_interview_start_create
+      description: Start interview conversation.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/objectives/:
+    get:
+      operationId: api_objectives_list
+      description: List and create objectives for current student.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Objective'
+          description: ''
+    post:
+      operationId: api_objectives_create
+      description: List and create objectives for current student.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Objective'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Objective'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Objective'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Objective'
+          description: ''
+  /api/objectives/{id}/decompose/:
+    post:
+      operationId: api_objectives_decompose_create
+      description: Decompose one objective into ordered milestones.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/objectives/{id}/tasks/:
+    post:
+      operationId: api_objectives_tasks_create
+      description: Create task under objective and call AI time estimation.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTask'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateTask'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateTask'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+          description: ''
+  /api/performance/summary/:
+    get:
+      operationId: api_performance_summary_retrieve
+      description: Return performance analytics summary for current student.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/portfolio/projects/:
+    get:
+      operationId: api_portfolio_projects_list
+      description: List/create student portfolio projects.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PortfolioProject'
+          description: ''
+    post:
+      operationId: api_portfolio_projects_create
+      description: List/create student portfolio projects.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PortfolioProject'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PortfolioProject'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PortfolioProject'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioProject'
+          description: ''
+  /api/portfolio/projects/{id}/assets/:
+    post:
+      operationId: api_portfolio_projects_assets_create
+      description: Upload asset to one portfolio project.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PortfolioAssetUpload'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PortfolioAssetUpload'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioAsset'
+          description: ''
+  /api/portfolio/projects/{id}/:
+    get:
+      operationId: api_portfolio_projects_retrieve
+      description: Retrieve/update/delete one student portfolio project.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioProject'
+          description: ''
+    put:
+      operationId: api_portfolio_projects_update
+      description: Retrieve/update/delete one student portfolio project.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PortfolioProject'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PortfolioProject'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PortfolioProject'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioProject'
+          description: ''
+    patch:
+      operationId: api_portfolio_projects_partial_update
+      description: Retrieve/update/delete one student portfolio project.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPortfolioProject'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPortfolioProject'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPortfolioProject'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioProject'
+          description: ''
+    delete:
+      operationId: api_portfolio_projects_destroy
+      description: Retrieve/update/delete one student portfolio project.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/proofs/{id}/analysis/:
+    get:
+      operationId: api_proofs_analysis_retrieve
+      description: Get proof analysis and generated questions/todo items.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reviews/:
+    post:
+      operationId: api_reviews_create
+      description: Create trainer review and optionally escalate issue severity.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/schedule/optimize/:
+    post:
+      operationId: api_schedule_optimize_create
+      description: Generate optimized sessions from availability and tasks.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/schema/:
+    get:
+      operationId: api_schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/sessions/{id}/complete/:
+    post:
+      operationId: api_sessions_complete_create
+      description: Mark session complete, upload proof, and trigger analysis.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ai/challenges/generate/:
+    post:
+      operationId: api_v1_ai_challenges_generate_create
+      description: Generate and persist daily micro challenges.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DailyChallengeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DailyChallengeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DailyChallengeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/ai/models/select/:
+    post:
+      operationId: api_v1_ai_models_select_create
+      description: Activate one model for a specific capability.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelWeightSelect'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ModelWeightSelect'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ModelWeightSelect'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/ai/models/weights/:
+    get:
+      operationId: api_v1_ai_models_weights_retrieve
+      description: List discovered model files and current active model selections.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ai/tagging/informatics/:
+    post:
+      operationId: api_v1_ai_tagging_informatics_create
+      description: Generate tags + checklist (informatics/legal).
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaggingChecklist'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TaggingChecklist'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TaggingChecklist'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/ai/tagging/legal/:
+    post:
+      operationId: api_v1_ai_tagging_legal_create
+      description: Generate tags + checklist (informatics/legal).
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaggingChecklist'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TaggingChecklist'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TaggingChecklist'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/ai/time-estimate/:
+    post:
+      operationId: api_v1_ai_time_estimate_create
+      description: Standalone time estimation endpoint.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeEstimateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TimeEstimateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TimeEstimateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/password-reset/confirm/:
+    post:
+      operationId: api_v1_auth_password_reset_confirm_create
+      description: Reset password using one-time token.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/password-reset/request/:
+    post:
+      operationId: api_v1_auth_password_reset_request_create
+      description: Issue password reset token.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/register/:
+    post:
+      operationId: api_v1_auth_register_create
+      description: Register endpoint.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Register'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/auth/token/:
+    post:
+      operationId: api_v1_auth_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: api_v1_auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/auth/users/:
+    get:
+      operationId: api_v1_auth_users_list
+      description: List all users for trainer/admin usage.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/auth/verify-email/confirm/:
+    post:
+      operationId: api_v1_auth_verify_email_confirm_create
+      description: Verify email using one-time token.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationConfirm'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/verify-email/request/:
+    post:
+      operationId: api_v1_auth_verify_email_request_create
+      description: Issue a new email verification token.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/challenges/:
+    get:
+      operationId: api_v1_challenges_retrieve
+      description: List upcoming adaptive challenges.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/dashboard/progress/:
+    get:
+      operationId: api_v1_dashboard_progress_retrieve
+      description: Return progress dashboard summary for current student.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/health/live/:
+    get:
+      operationId: api_v1_health_live_retrieve
+      description: Liveness probe endpoint.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/health/ready/:
+    get:
+      operationId: api_v1_health_ready_retrieve
+      description: Readiness probe endpoint with DB check.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/interview/message/:
+    post:
+      operationId: api_v1_interview_message_create
+      description: Send interview message and get AI expert-system response.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterviewMessage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InterviewMessage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InterviewMessage'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/interview/start/:
+    post:
+      operationId: api_v1_interview_start_create
+      description: Start interview conversation.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/objectives/:
+    get:
+      operationId: api_v1_objectives_list
+      description: List and create objectives for current student.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Objective'
+          description: ''
+    post:
+      operationId: api_v1_objectives_create
+      description: List and create objectives for current student.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Objective'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Objective'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Objective'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Objective'
+          description: ''
+  /api/v1/objectives/{id}/decompose/:
+    post:
+      operationId: api_v1_objectives_decompose_create
+      description: Decompose one objective into ordered milestones.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/objectives/{id}/tasks/:
+    post:
+      operationId: api_v1_objectives_tasks_create
+      description: Create task under objective and call AI time estimation.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTask'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateTask'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateTask'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+          description: ''
+  /api/v1/performance/summary/:
+    get:
+      operationId: api_v1_performance_summary_retrieve
+      description: Return performance analytics summary for current student.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/portfolio/projects/:
+    get:
+      operationId: api_v1_portfolio_projects_list
+      description: List/create student portfolio projects.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PortfolioProject'
+          description: ''
+    post:
+      operationId: api_v1_portfolio_projects_create
+      description: List/create student portfolio projects.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PortfolioProject'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PortfolioProject'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PortfolioProject'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioProject'
+          description: ''
+  /api/v1/portfolio/projects/{id}/assets/:
+    post:
+      operationId: api_v1_portfolio_projects_assets_create
+      description: Upload asset to one portfolio project.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PortfolioAssetUpload'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PortfolioAssetUpload'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioAsset'
+          description: ''
+  /api/v1/portfolio/projects/{id}/:
+    get:
+      operationId: api_v1_portfolio_projects_retrieve
+      description: Retrieve/update/delete one student portfolio project.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioProject'
+          description: ''
+    put:
+      operationId: api_v1_portfolio_projects_update
+      description: Retrieve/update/delete one student portfolio project.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PortfolioProject'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PortfolioProject'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PortfolioProject'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioProject'
+          description: ''
+    patch:
+      operationId: api_v1_portfolio_projects_partial_update
+      description: Retrieve/update/delete one student portfolio project.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPortfolioProject'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPortfolioProject'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPortfolioProject'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioProject'
+          description: ''
+    delete:
+      operationId: api_v1_portfolio_projects_destroy
+      description: Retrieve/update/delete one student portfolio project.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/proofs/{id}/analysis/:
+    get:
+      operationId: api_v1_proofs_analysis_retrieve
+      description: Get proof analysis and generated questions/todo items.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reviews/:
+    post:
+      operationId: api_v1_reviews_create
+      description: Create trainer review and optionally escalate issue severity.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/schedule/optimize/:
+    post:
+      operationId: api_v1_schedule_optimize_create
+      description: Generate optimized sessions from availability and tasks.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/sessions/{id}/complete/:
+    post:
+      operationId: api_v1_sessions_complete_create
+      description: Mark session complete, upload proof, and trigger analysis.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+components:
+  schemas:
+    CapabilityEnum:
+      enum:
+      - all
+      - interview
+      - tagging
+      - time_estimation
+      - scheduling
+      - proof_analysis
+      - challenge_generation
+      type: string
+      description: |-
+        * `all` - all
+        * `interview` - interview
+        * `tagging` - tagging
+        * `time_estimation` - time_estimation
+        * `scheduling` - scheduling
+        * `proof_analysis` - proof_analysis
+        * `challenge_generation` - challenge_generation
+    CreateTask:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        order:
+          type: integer
+        metadata:
+          type: object
+          additionalProperties: {}
+        expected_output_text:
+          type: string
+      required:
+      - title
+    DailyChallengeRequest:
+      type: object
+      properties:
+        domain:
+          $ref: '#/components/schemas/DomainEnum'
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        minutes:
+          type: integer
+          maximum: 120
+          minimum: 5
+          default: 20
+      required:
+      - domain
+      - level
+    DomainEnum:
+      enum:
+      - informatics
+      - law
+      type: string
+      description: |-
+        * `informatics` - informatics
+        * `law` - law
+    EmailVerificationConfirm:
+      type: object
+      properties:
+        token:
+          type: string
+          maxLength: 128
+      required:
+      - token
+    EmailVerificationRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
+    InterviewMessage:
+      type: object
+      properties:
+        conversation_id:
+          type: integer
+        message:
+          type: string
+          maxLength: 2000
+      required:
+      - conversation_id
+      - message
+    LevelEnum:
+      enum:
+      - beginner
+      - intermediate
+      - advanced
+      type: string
+      description: |-
+        * `beginner` - beginner
+        * `intermediate` - intermediate
+        * `advanced` - advanced
+    ModelWeightSelect:
+      type: object
+      properties:
+        capability:
+          $ref: '#/components/schemas/CapabilityEnum'
+        provider:
+          allOf:
+          - $ref: '#/components/schemas/ProviderEnum'
+          default: local
+        model_name:
+          type: string
+          maxLength: 120
+        weight_path:
+          type: string
+          maxLength: 500
+        metadata:
+          type: object
+          additionalProperties: {}
+      required:
+      - capability
+      - model_name
+      - weight_path
+    Objective:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        suggested_by:
+          $ref: '#/components/schemas/SuggestedByEnum'
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+          readOnly: true
+      required:
+      - created_at
+      - description
+      - id
+      - student
+      - tasks
+      - title
+    PasswordResetConfirm:
+      type: object
+      properties:
+        token:
+          type: string
+          maxLength: 128
+        new_password:
+          type: string
+          maxLength: 128
+          minLength: 8
+      required:
+      - new_password
+      - token
+    PasswordResetRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
+    PatchedPortfolioProject:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        tech_stack:
+          type: object
+          additionalProperties: {}
+        project_url:
+          type: string
+          format: uri
+          maxLength: 200
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+        assets:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortfolioAsset'
+          readOnly: true
+    PortfolioAsset:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project:
+          type: integer
+          readOnly: true
+        file:
+          type: string
+          format: uri
+        caption:
+          type: string
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - file
+      - id
+      - project
+    PortfolioAssetUpload:
+      type: object
+      properties:
+        file:
+          type: string
+          format: uri
+        caption:
+          type: string
+          maxLength: 255
+      required:
+      - file
+    PortfolioProject:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        tech_stack:
+          type: object
+          additionalProperties: {}
+        project_url:
+          type: string
+          format: uri
+          maxLength: 200
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+        assets:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortfolioAsset'
+          readOnly: true
+      required:
+      - assets
+      - id
+      - student
+      - title
+    ProviderEnum:
+      enum:
+      - local
+      - openai
+      - mock
+      type: string
+      description: |-
+        * `local` - local
+        * `openai` - openai
+        * `mock` - mock
+    Register:
+      type: object
+      description: Register a new user as student, expert, or trainer.
+      properties:
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        major:
+          type: string
+        current_status:
+          type: string
+        goal_text:
+          type: string
+        timezone:
+          type: string
+          default: UTC
+        expertise_tags:
+          type: array
+          items:
+            type: string
+        bio:
+          type: string
+      required:
+      - password
+      - role
+      - username
+    RoleEnum:
+      enum:
+      - student
+      - expert
+      - trainer
+      type: string
+      description: |-
+        * `student` - student
+        * `expert` - expert
+        * `trainer` - trainer
+    StatusEnum:
+      enum:
+      - draft
+      - active
+      - completed
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `active` - Active
+        * `completed` - Completed
+    SuggestedByEnum:
+      enum:
+      - ai
+      - expert
+      - student
+      type: string
+      description: |-
+        * `ai` - AI
+        * `expert` - Expert
+        * `student` - Student
+    TaggingChecklist:
+      type: object
+      properties:
+        text:
+          type: string
+          maxLength: 6000
+        domain:
+          $ref: '#/components/schemas/DomainEnum'
+      required:
+      - text
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        objective:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        estimated_minutes:
+          type: integer
+          readOnly: true
+        estimation_confidence:
+          type: number
+          format: double
+          readOnly: true
+        order:
+          type: integer
+        metadata:
+          type: object
+          additionalProperties: {}
+        expected_output_text:
+          type: string
+      required:
+      - estimated_minutes
+      - estimation_confidence
+      - id
+      - objective
+      - title
+    TimeEstimateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          default: ''
+        metadata:
+          type: object
+          additionalProperties: {}
+      required:
+      - title
+    TokenObtainPair:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - password
+      - refresh
+      - username
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        is_student:
+          type: boolean
+        is_expert:
+          type: boolean
+        is_trainer:
+          type: boolean
+        is_email_verified:
+          type: boolean
+      required:
+      - id
+      - username
+    VisibilityEnum:
+      enum:
+      - public
+      - private
+      type: string
+      description: |-
+        * `public` - Public
+        * `private` - Private
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

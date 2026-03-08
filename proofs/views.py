@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, status
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -18,7 +20,9 @@ class SessionCompleteView(APIView):
     """Mark session complete, upload proof, and trigger analysis."""
 
     permission_classes = [permissions.IsAuthenticated, IsStudent]
+    parser_classes = [MultiPartParser, FormParser]
 
+    @extend_schema(request=CompleteSessionSerializer, responses={201: ProofSerializer})
     def post(self, request, id: int, *args, **kwargs) -> Response:
         session = get_object_or_404(Session, id=id, student=request.user)
         serializer = CompleteSessionSerializer(data=request.data)
