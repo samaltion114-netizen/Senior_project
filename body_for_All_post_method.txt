@@ -1,0 +1,163 @@
+Use the same bodies for /api/... and /api/v1/....
+
+  1. POST /api/auth/register/
+
+  {
+    "username": "student1",
+    "email": "student1@example.com",
+    "password": "pass12345",
+    "role": "student",
+    "major": "IT",
+    "current_status": "active",
+    "goal_text": "I want AI training",
+    "timezone": "UTC"
+  }
+
+  Expert example fields:
+
+  {
+    "username": "expert1",
+    "email": "expert1@example.com",
+    "password": "pass12345",
+    "role": "expert",
+    "expertise_tags": ["django", "ai"],
+    "bio": "Backend mentor"
+  }
+
+  2. POST /api/auth/token/
+
+  {
+    "username": "student1",
+    "password": "pass12345"
+  }
+
+  3. POST /api/auth/token/refresh/
+
+  {
+    "refresh": "YOUR_REFRESH_TOKEN"
+  }
+
+  4. POST /api/auth/verify-email/request/
+
+  {
+    "email": "student1@example.com"
+  }
+
+  5. POST /api/auth/verify-email/confirm/
+
+  {
+    "token": "EMAIL_VERIFICATION_TOKEN"
+  }
+
+  6. POST /api/auth/password-reset/request/
+
+  {
+    "email": "student1@example.com"
+  }
+
+  7. POST /api/auth/password-reset/confirm/
+
+  {
+    "token": "PASSWORD_RESET_TOKEN",
+    "new_password": "newpass123"
+  }
+
+  8. POST /api/interview/start/
+
+  {}
+
+  9. POST /api/interview/message/
+
+  {
+    "conversation_id": 1,
+    "message": "I want backend AI internship training"
+  }
+
+  10. POST /api/objectives/
+
+  {
+    "title": "Backend Internship Readiness (Django/REST)",
+    "description": "Build one portfolio backend in 8 weeks",
+    "suggested_by": "ai",
+    "status": "active"
+  }
+
+  11. POST /api/objectives/{id}/tasks/
+
+  {
+    "title": "Implement classifier API",
+    "description": "Build endpoint and tests",
+    "order": 1,
+    "metadata": {
+      "complexity": 2
+    },
+    "expected_output_text": "trained model and test output"
+  }
+
+  12. POST /api/schedule/optimize/
+
+  {
+    "objective_id": 1,
+    "weekly_availability": {
+      "monday": [{"start": "18:00", "end": "20:00"}],
+      "wednesday": [{"start": "18:00", "end": "20:00"}]
+    },
+    "max_daily_minutes": 90,
+    "break_minutes": 10,
+    "start_date": "2026-02-23"
+  }
+
+  13. POST /api/sessions/{id}/complete/ (multipart/form-data, not JSON)
+
+  - image: file (.png/.jpg)
+  - explanation: text
+
+  14. POST /api/reviews/
+
+  {
+    "proof": 1,
+    "is_bug_confirmed": true,
+    "notes": "Confirmed mismatch"
+  }
+
+  15. POST /api/ai/tagging/informatics/
+
+  {
+    "text": "Django REST API returns 401 with JWT"
+  }
+
+  16. POST /api/ai/tagging/legal/
+
+  {
+    "text": "هل يحق للطرف الثاني فسخ العقد عند التأخير؟"
+  }
+
+  17. POST /api/ai/challenges/generate/
+
+  {
+    "domain": "informatics",
+    "level": "beginner",
+    "minutes": 20
+  }
+
+  18. POST /api/ai/time-estimate/
+
+  {
+    "title": "Implement a classifier",
+    "description": "Build, test, and document it",
+    "metadata": {
+      "complexity": 2
+    }
+  }
+
+  19. POST /api/ai/models/select/
+
+  {
+    "capability": "interview",
+    "provider": "local",
+    "model_name": "interview_v1",
+    "weight_path": "/app/ai_model_weights/interview_v1.onnx",
+    "metadata": {
+      "framework": "onnx"
+    }
+  }
