@@ -144,7 +144,10 @@ class Notification(models.Model):
     TYPE_TASK_DECOMPOSED = "task_decomposed"
     TYPE_STREAK = "streak"
     TYPE_GAMIFICATION = "gamification"
+    TYPE_INACTIVITY = "inactivity"
     TYPE_SESSION_REMINDER = "session_reminder"
+    TYPE_ASSIGNMENT_EXPIRY = "assignment_expiry"
+    TYPE_CHAT_MESSAGE = "chat_message"
     TYPE_CHOICES = [
         (TYPE_ASSIGNMENT_REQUEST, "Assignment Request"),
         (TYPE_ASSIGNMENT_ACCEPTED, "Assignment Accepted"),
@@ -153,7 +156,10 @@ class Notification(models.Model):
         (TYPE_TASK_DECOMPOSED, "Task Decomposed"),
         (TYPE_STREAK, "Streak"),
         (TYPE_GAMIFICATION, "Gamification"),
+        (TYPE_INACTIVITY, "Inactivity"),
         (TYPE_SESSION_REMINDER, "Session Reminder"),
+        (TYPE_ASSIGNMENT_EXPIRY, "Assignment Expiry"),
+        (TYPE_CHAT_MESSAGE, "Chat Message"),
     ]
 
     user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="notifications")
@@ -164,6 +170,57 @@ class Notification(models.Model):
     metadata = models.JSONField(default=dict, blank=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+
+class ChatThread(models.Model):
+    """One direct chat thread bound to an active expert assignment."""
+
+    assignment = models.OneToOneField("accounts.ExpertAssignment", on_delete=models.CASCADE, related_name="chat_thread")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-updated_at",)
+
+
+class ChatMessage(models.Model):
+    """Message exchanged inside a mentorship thread."""
+
+    thread = models.ForeignKey(ChatThread, on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="sent_chat_messages")
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("created_at", "id")
+
+
+class PaymentRecord(models.Model):
+    """Tracks payment intents and webhook-confirmed outcomes."""
+
+    STATUS_PENDING = "pending"
+    STATUS_SUCCEEDED = "succeeded"
+    STATUS_FAILED = "failed"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_SUCCEEDED, "Succeeded"),
+        (STATUS_FAILED, "Failed"),
+    ]
+
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="payments")
+    expert = models.ForeignKey("accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="expert_payments")
+    provider = models.CharField(max_length=30, default="mock")
+    amount = models.PositiveIntegerField()
+    currency = models.CharField(max_length=10, default="usd")
+    payment_intent_id = models.CharField(max_length=255, unique=True)
+    client_secret = models.CharField(max_length=500, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ("-created_at",)

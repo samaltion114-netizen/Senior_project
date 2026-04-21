@@ -10,11 +10,14 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from accounts.models import (
     Badge,
+    ChatMessage,
+    ChatThread,
     EmailVerificationToken,
     ExpertAssignment,
     ExpertProfile,
     Notification,
     PasswordResetToken,
+    PaymentRecord,
     StudentProfile,
     UserBadge,
 )
@@ -232,3 +235,54 @@ class PaymentIntentRequestSerializer(serializers.Serializer):
     amount = serializers.IntegerField(min_value=1)
     currency = serializers.CharField(max_length=10, default="usd")
     expert_id = serializers.IntegerField(required=False)
+
+
+class ChatMessageCreateSerializer(serializers.Serializer):
+    body = serializers.CharField(max_length=4000)
+
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    sender_name = serializers.CharField(source="sender.username", read_only=True)
+
+    class Meta:
+        model = ChatMessage
+        fields = ("id", "thread", "sender", "sender_name", "body", "created_at")
+        read_only_fields = ("thread", "sender", "created_at")
+
+
+class ChatThreadSerializer(serializers.ModelSerializer):
+    assignment = ExpertAssignmentSerializer(read_only=True)
+    messages = ChatMessageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ChatThread
+        fields = ("id", "assignment", "messages", "created_at", "updated_at")
+
+
+class PaymentRecordSerializer(serializers.ModelSerializer):
+    expert_name = serializers.CharField(source="expert.username", read_only=True)
+
+    class Meta:
+        model = PaymentRecord
+        fields = (
+            "id",
+            "user",
+            "expert",
+            "expert_name",
+            "provider",
+            "amount",
+            "currency",
+            "payment_intent_id",
+            "client_secret",
+            "status",
+            "metadata",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("user", "provider", "payment_intent_id", "client_secret", "status", "created_at", "updated_at")
+
+
+class StripeWebhookSerializer(serializers.Serializer):
+    payment_intent_id = serializers.CharField(max_length=255)
+    status = serializers.ChoiceField(choices=["succeeded", "failed"])
+    metadata = serializers.JSONField(required=False, default=dict)

@@ -1,11 +1,16 @@
 """Unit tests for standalone AI feature APIs."""
 from __future__ import annotations
 
+from datetime import timedelta
+
 import pytest
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from accounts.models import EmailVerificationToken, PasswordResetToken
+from ai.tasks import send_reminder_notifications_task
+from scheduling.models import Session
 
 User = get_user_model()
 
@@ -206,3 +211,66 @@ def test_generated_tasks_assignments_notifications_and_payments(client: APIClien
     payment = client.post("/api/payments/intent/", {"amount": 5000, "currency": "usd"}, format="json")
     assert payment.status_code == 200
     assert "client_secret" in payment.json()
+
+    threads = client.get("/api/chat/threads/")
+    assert threads.status_code == 200
+    assert len(threads.json()) == 1
+    thread_id = threads.json()[0]["id"]
+
+    student_message = client.post(f"/api/chat/threads/{thread_id}/messages/", {"body": "Hello expert"}, format="json")
+    assert student_message.status_code == 201
+
+    expert_client.credentials(HTTP_AUTHORIZATION=f"Bearer {expert_token}")
+    expert_messages = expert_client.get(f"/api/chat/threads/{thread_id}/messages/")
+    assert expert_messages.status_code == 200
+    assert len(expert_messages.json()) >= 1
+
+    payments = client.get("/api/payments/")
+    assert payments.status_code == 200
+    payment_intent_id = payments.json()[0]["payment_intent_id"]
+    webhook = client.post(
+        "/api/payments/webhook/",
+        {"payment_intent_id": payment_intent_id, "status": "succeeded", "metadata": {"source": "test"}},
+        format="json",
+    )
+    assert webhook.status_code == 200
+    assert webhook.json()["status"] == "succeeded"
+
+
+@pytest.mark.django_db
+def test_reminder_notification_task_creates_session_and_inactivity_notifications(client: APIClient) -> None:
+    token = _register_and_auth(client, "student_reminder")
+    expert_client = APIClient()
+    expert_token = _register_and_auth(expert_client, "expert_reminder", role="expert")
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+    objective = client.post(
+        "/api/objectives/",
+        {"title": "Reminder Goal", "description": "desc", "suggested_by": "ai", "status": "active"},
+        format="json",
+    )
+    objective_id = objective.json()["id"]
+    task = client.post(
+        f"/api/objectives/{objective_id}/tasks/",
+        {"title": "Implement API", "description": "build endpoint", "order": 1, "metadata": {"complexity": 1}},
+        format="json",
+    )
+    task_id = task.json()["id"]
+    student = User.objects.get(username="student_reminder")
+    Session.objects.create(
+        student=student,
+        task_id=task_id,
+        scheduled_start=timezone.now() + timedelta(minutes=10),
+        scheduled_end=timezone.now() + timedelta(minutes=40),
+        duration_minutes=30,
+    )
+
+    experts = client.get("/api/experts/?search=expert").json()
+    assign = client.post("/api/assignments/request/", {"expert_id": experts[0]["user_id"]}, format="json")
+    expert_client.credentials(HTTP_AUTHORIZATION=f"Bearer {expert_token}")
+    expert_client.post(f"/api/trainer/assignments/{assign.json()['id']}/accept/", {}, format="json")
+
+    result = send_reminder_notifications_task()
+    assert result["sent"] >= 1
+    notifications = client.get("/api/notifications/")
+    assert notifications.status_code == 200
+    assert any(item["type"] in {"session_reminder", "inactivity", "assignment_expiry", "streak"} for item in notifications.json())

@@ -4,11 +4,14 @@ from django.contrib.auth.admin import UserAdmin
 
 from accounts.models import (
     Badge,
+    ChatMessage,
+    ChatThread,
     EmailVerificationToken,
     ExpertAssignment,
     ExpertProfile,
     Notification,
     PasswordResetToken,
+    PaymentRecord,
     StudentProfile,
     User,
     UserActivityLog,
@@ -71,3 +74,19 @@ class ExpertAssignmentAdmin(admin.ModelAdmin):
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ("user", "type", "title", "is_read", "created_at")
     list_filter = ("type", "is_read")
+
+
+@admin.register(ChatThread)
+class ChatThreadAdmin(admin.ModelAdmin):
+    list_display = ("assignment", "created_at", "updated_at")
+
+
+@admin.register(ChatMessage)
+class ChatMessageAdmin(admin.ModelAdmin):
+    list_display = ("thread", "sender", "created_at")
+
+
+@admin.register(PaymentRecord)
+class PaymentRecordAdmin(admin.ModelAdmin):
+    list_display = ("user", "expert", "provider", "amount", "currency", "status", "created_at")
+    list_filter = ("provider", "status")

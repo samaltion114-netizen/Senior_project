@@ -4,6 +4,7 @@ from datetime import timedelta
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.utils import timezone
@@ -13,11 +14,24 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.views import APIView
 
-from accounts.models import EmailVerificationToken, ExpertAssignment, ExpertProfile, Notification, PasswordResetToken, UserBadge
+from accounts.models import (
+    ChatMessage,
+    ChatThread,
+    EmailVerificationToken,
+    ExpertAssignment,
+    ExpertProfile,
+    Notification,
+    PasswordResetToken,
+    PaymentRecord,
+    UserBadge,
+)
 from accounts.permissions import IsExpert, IsStudent
 from accounts.serializers import (
     AssignmentActionSerializer,
     AssignmentRequestSerializer,
+    ChatMessageCreateSerializer,
+    ChatMessageSerializer,
+    ChatThreadSerializer,
     EmailVerificationConfirmSerializer,
     EmailVerificationRequestSerializer,
     EmailTokenObtainPairSerializer,
@@ -28,7 +42,9 @@ from accounts.serializers import (
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     PaymentIntentRequestSerializer,
+    PaymentRecordSerializer,
     RegisterSerializer,
+    StripeWebhookSerializer,
     UserBadgeSerializer,
     UserSerializer,
 )
@@ -142,6 +158,16 @@ class NotificationListView(APIView):
         return Response(NotificationSerializer(queryset, many=True).data)
 
 
+class AssignmentListView(APIView):
+    """List assignments relevant to the current user."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs) -> Response:
+        queryset = ExpertAssignment.objects.filter(Q(student=request.user) | Q(expert=request.user)).order_by("-created_at")
+        return Response(ExpertAssignmentSerializer(queryset, many=True).data)
+
+
 class AssignmentRequestView(APIView):
     """Student requests collaboration with an expert."""
 
@@ -183,6 +209,7 @@ class TrainerAssignmentAcceptView(APIView):
         assignment.expires_at = timezone.now() + timedelta(days=30)
         assignment.rejection_reason = ""
         assignment.save(update_fields=["status", "expires_at", "rejection_reason", "updated_at"])
+        ChatThread.objects.get_or_create(assignment=assignment)
         create_notification(
             user=assignment.student,
             type=Notification.TYPE_ASSIGNMENT_ACCEPTED,
@@ -220,6 +247,56 @@ class TrainerAssignmentRejectView(APIView):
         return Response(ExpertAssignmentSerializer(assignment).data)
 
 
+class ChatThreadListView(APIView):
+    """List active chat threads for the current user."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs) -> Response:
+        queryset = ChatThread.objects.filter(
+            assignment__status=ExpertAssignment.STATUS_ACTIVE
+        ).filter(Q(assignment__student=request.user) | Q(assignment__expert=request.user)).select_related("assignment__student", "assignment__expert")
+        return Response(ChatThreadSerializer(queryset, many=True).data)
+
+
+class ChatMessageListCreateView(APIView):
+    """List or send messages inside an active mentorship thread."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_thread(self, request, id: int) -> ChatThread | None:
+        return ChatThread.objects.filter(
+            id=id,
+            assignment__status=ExpertAssignment.STATUS_ACTIVE,
+        ).filter(Q(assignment__student=request.user) | Q(assignment__expert=request.user)).first()
+
+    def get(self, request, id: int, *args, **kwargs) -> Response:
+        thread = self.get_thread(request, id)
+        if thread is None:
+            return Response({"detail": "Thread not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(ChatMessageSerializer(thread.messages.all(), many=True).data)
+
+    @transaction.atomic
+    @extend_schema(request=ChatMessageCreateSerializer, responses={201: ChatMessageSerializer})
+    def post(self, request, id: int, *args, **kwargs) -> Response:
+        thread = self.get_thread(request, id)
+        if thread is None:
+            return Response({"detail": "Thread not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ChatMessageCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        message = ChatMessage.objects.create(thread=thread, sender=request.user, body=serializer.validated_data["body"])
+        recipient = thread.assignment.expert if request.user == thread.assignment.student else thread.assignment.student
+        create_notification(
+            user=recipient,
+            type=Notification.TYPE_CHAT_MESSAGE,
+            title="New chat message",
+            message=f"{request.user.username} sent you a new message.",
+            related_id=thread.id,
+        )
+        thread.save(update_fields=["updated_at"])
+        return Response(ChatMessageSerializer(message).data, status=status.HTTP_201_CREATED)
+
+
 class PaymentIntentView(APIView):
     """Create Stripe payment intent payload for Flutter payment sheet."""
 
@@ -230,11 +307,23 @@ class PaymentIntentView(APIView):
         serializer = PaymentIntentRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        expert = User.objects.filter(id=data.get("expert_id"), is_expert=True).first() if data.get("expert_id") else None
         if stripe is None:
+            payment = PaymentRecord.objects.create(
+                user=request.user,
+                expert=expert,
+                provider="mock",
+                amount=data["amount"],
+                currency=data["currency"],
+                payment_intent_id=f"mock_pi_{request.user.id}_{timezone.now().timestamp()}",
+                client_secret=f"mock_client_secret_{data['amount']}_{data['currency']}",
+                status=PaymentRecord.STATUS_PENDING,
+            )
             return Response(
                 {
                     "provider": "mock",
-                    "client_secret": f"mock_client_secret_{data['amount']}_{data['currency']}",
+                    "client_secret": payment.client_secret,
+                    "payment_intent_id": payment.payment_intent_id,
                     "publishable_key": "",
                 }
             )
@@ -244,6 +333,19 @@ class PaymentIntentView(APIView):
             currency=data["currency"],
             metadata={"user_id": request.user.id, "expert_id": data.get("expert_id", "")},
         )
+        PaymentRecord.objects.update_or_create(
+            payment_intent_id=intent.id,
+            defaults={
+                "user": request.user,
+                "expert": expert,
+                "provider": "stripe",
+                "amount": data["amount"],
+                "currency": data["currency"],
+                "client_secret": intent.client_secret,
+                "status": PaymentRecord.STATUS_PENDING,
+                "metadata": {"expert_id": data.get("expert_id", "")},
+            },
+        )
         return Response(
             {
                 "provider": "stripe",
@@ -251,6 +353,35 @@ class PaymentIntentView(APIView):
                 "payment_intent_id": intent.id,
             }
         )
+
+
+class PaymentRecordListView(APIView):
+    """List current user's payment records."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs) -> Response:
+        queryset = PaymentRecord.objects.filter(user=request.user)
+        return Response(PaymentRecordSerializer(queryset, many=True).data)
+
+
+class StripeWebhookView(APIView):
+    """Update payment record status from webhook-like payload."""
+
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(request=StripeWebhookSerializer, responses={200: PaymentRecordSerializer})
+    def post(self, request, *args, **kwargs) -> Response:
+        serializer = StripeWebhookSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        payment = PaymentRecord.objects.filter(payment_intent_id=data["payment_intent_id"]).first()
+        if payment is None:
+            return Response({"detail": "Payment record not found."}, status=status.HTTP_404_NOT_FOUND)
+        payment.status = PaymentRecord.STATUS_SUCCEEDED if data["status"] == "succeeded" else PaymentRecord.STATUS_FAILED
+        payment.metadata = {**payment.metadata, **data.get("metadata", {})}
+        payment.save(update_fields=["status", "metadata", "updated_at"])
+        return Response(PaymentRecordSerializer(payment).data)
 
 
 class EmailVerificationRequestView(APIView):

@@ -138,7 +138,15 @@ CELERY_BEAT_SCHEDULE = {
     "generate-daily-challenges": {
         "task": "ai.tasks.generate_daily_challenges_task",
         "schedule": 24 * 60 * 60,
-    }
+    },
+    "send-reminder-notifications": {
+        "task": "ai.tasks.send_reminder_notifications_task",
+        "schedule": 15 * 60,
+    },
+    "expire-assignments": {
+        "task": "ai.tasks.expire_assignments_task",
+        "schedule": 60 * 60,
+    },
 }
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
@@ -148,6 +156,7 @@ AI_WEIGHTS_DIR = os.getenv("AI_WEIGHTS_DIR", str(BASE_DIR / "ai_model_weights"))
 AI_TASK_TIME_DATASET = os.getenv("AI_TASK_TIME_DATASET", str(BASE_DIR / "ai" / "data" / "Informatics_task_times_synthetic.csv"))
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
+FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH", "")
 
 LOGIN_REDIRECT_URL = "/accounts/profile/"
 LOGOUT_REDIRECT_URL = "/api-auth/login/"

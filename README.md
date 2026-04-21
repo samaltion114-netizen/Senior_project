@@ -151,6 +151,11 @@ curl -X POST http://localhost/api/ai/models/select/ \
 - `GET /api/leaderboard/?filter=daily`
 - `GET /api/users/{id}/badges/`
 - `POST /api/payments/intent/`
+- `GET /api/payments/`
+- `POST /api/payments/webhook/`
+- `GET /api/assignments/`
+- `GET /api/chat/threads/`
+- `GET/POST /api/chat/threads/{id}/messages/`
 
 ## Professional Non-AI Features Added
 
@@ -178,10 +183,15 @@ Registration now creates email verification token (development output in console
 - expert assignment request/accept/reject flow
 - notification records for assignment actions, proof analysis, decomposition, and gamification
 - task comments gated by active expert assignment
+- active-assignment chat threads and messages
+- periodic reminder jobs for inactivity, streak risk, session reminders, and assignment expiry
 
 ### Payments
 - `POST /api/payments/intent/`
+- `GET /api/payments/`
+- `POST /api/payments/webhook/`
 - uses Stripe when configured, otherwise returns a mock `client_secret` for backend/dev flow
+- stores payment records and updates statuses via webhook payloads
 
 ### Standardized Error Responses
 All DRF errors now use one shape:

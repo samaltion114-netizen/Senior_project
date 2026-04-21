@@ -311,11 +311,13 @@ class MockAIService(InterviewAgent, ObjectiveScorer, TimeEstimator, ScheduleOpti
             task_is_technical = any(
                 token in task_lower for token in ["implement", "build", "code", "api", "model", "network", "docs", "classifier", "test"]
             )
+            strong_mismatch = (objective_is_legal and task_is_technical) or (objective_is_technical and task_is_legal)
             is_valid = (
                 any(token in objective_lower for token in task_lower.split()[:2])
                 or any(token in task_lower for token in objective_lower.split()[:3])
                 or (objective_is_legal and task_is_legal)
                 or (objective_is_technical and task_is_technical)
+                or not strong_mismatch
                 or not task_lower.strip()
             )
             tasks = [infer_task(task_name, 1)] if is_valid else []
