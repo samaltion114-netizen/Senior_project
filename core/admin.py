@@ -11,6 +11,7 @@ from core.models import (
     PortfolioProject,
     ProgressSnapshot,
     Task,
+    TaskComment,
 )
 
 
@@ -22,7 +23,7 @@ class ObjectiveAdmin(admin.ModelAdmin):
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ("id", "objective", "title", "estimated_minutes", "order")
+    list_display = ("id", "objective", "title", "status", "type", "xp_reward", "estimated_minutes", "order")
 
 
 @admin.register(ObjectiveMilestone)
@@ -58,3 +59,8 @@ class PortfolioProjectAdmin(admin.ModelAdmin):
 @admin.register(PortfolioAsset)
 class PortfolioAssetAdmin(admin.ModelAdmin):
     list_display = ("id", "project", "caption", "created_at")
+
+
+@admin.register(TaskComment)
+class TaskCommentAdmin(admin.ModelAdmin):
+    list_display = ("id", "task", "author", "created_at")

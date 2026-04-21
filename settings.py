@@ -75,7 +75,7 @@ else:
     DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
 
 if os.getenv("PYTEST_CURRENT_TEST"):
-    DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "test.sqlite3"}}
+    DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -145,6 +145,9 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 PROOF_CONFIDENCE_THRESHOLD = float(os.getenv("PROOF_CONFIDENCE_THRESHOLD", "0.75"))
 AI_PROVIDER = os.getenv("AI_PROVIDER", "mock")
 AI_WEIGHTS_DIR = os.getenv("AI_WEIGHTS_DIR", str(BASE_DIR / "ai_model_weights"))
+AI_TASK_TIME_DATASET = os.getenv("AI_TASK_TIME_DATASET", str(BASE_DIR / "ai" / "data" / "Informatics_task_times_synthetic.csv"))
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
 
 LOGIN_REDIRECT_URL = "/accounts/profile/"
 LOGOUT_REDIRECT_URL = "/api-auth/login/"

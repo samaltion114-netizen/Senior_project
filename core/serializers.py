@@ -11,10 +11,27 @@ from core.models import (
     PortfolioProject,
     ProgressSnapshot,
     Task,
+    TaskComment,
 )
 
 
 class TaskSerializer(serializers.ModelSerializer):
+    session_id = serializers.SerializerMethodField()
+    scheduled_day = serializers.SerializerMethodField()
+    estimated_duration = serializers.IntegerField(source="estimated_minutes", read_only=True)
+    is_scheduled = serializers.SerializerMethodField()
+
+    def get_session_id(self, obj: Task):
+        session = obj.sessions.order_by("scheduled_start").first()
+        return session.id if session else None
+
+    def get_scheduled_day(self, obj: Task):
+        session = obj.sessions.order_by("scheduled_start").first()
+        return session.scheduled_start.strftime("%A") if session else None
+
+    def get_is_scheduled(self, obj: Task) -> bool:
+        return obj.sessions.exists()
+
     class Meta:
         model = Task
         fields = (
@@ -22,28 +39,89 @@ class TaskSerializer(serializers.ModelSerializer):
             "objective",
             "title",
             "description",
+            "status",
+            "type",
+            "difficulty_level",
+            "task_size",
+            "xp_reward",
             "estimated_minutes",
+            "estimated_duration",
             "estimation_confidence",
             "order",
             "metadata",
             "expected_output_text",
+            "youtube_link_ar",
+            "youtube_link_en",
+            "session_id",
+            "scheduled_day",
+            "is_scheduled",
         )
         read_only_fields = ("objective", "estimated_minutes", "estimation_confidence")
 
 
 class ObjectiveSerializer(serializers.ModelSerializer):
     tasks = TaskSerializer(many=True, read_only=True)
+    has_unscheduled_tasks = serializers.SerializerMethodField()
+
+    def get_has_unscheduled_tasks(self, obj: Objective) -> bool:
+        return obj.tasks.filter(sessions__isnull=True).exists()
 
     class Meta:
         model = Objective
-        fields = ("id", "student", "title", "description", "suggested_by", "status", "created_at", "tasks")
+        fields = ("id", "student", "title", "description", "suggested_by", "status", "created_at", "has_unscheduled_tasks", "tasks")
         read_only_fields = ("student", "created_at")
 
 
 class CreateTaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = ("title", "description", "order", "metadata", "expected_output_text")
+        fields = (
+            "title",
+            "description",
+            "status",
+            "type",
+            "difficulty_level",
+            "task_size",
+            "xp_reward",
+            "order",
+            "metadata",
+            "expected_output_text",
+            "youtube_link_ar",
+            "youtube_link_en",
+        )
+
+
+class TaskUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields = (
+            "title",
+            "description",
+            "status",
+            "type",
+            "difficulty_level",
+            "task_size",
+            "xp_reward",
+            "order",
+            "metadata",
+            "expected_output_text",
+            "youtube_link_ar",
+            "youtube_link_en",
+        )
+
+
+class GenerateTasksSerializer(serializers.Serializer):
+    user_level = serializers.ChoiceField(choices=["beginner", "intermediate", "advanced"], required=False, default="intermediate")
+    count = serializers.IntegerField(min_value=1, max_value=10, default=5)
+
+
+class TaskCommentSerializer(serializers.ModelSerializer):
+    author_name = serializers.CharField(source="author.username", read_only=True)
+
+    class Meta:
+        model = TaskComment
+        fields = ("id", "task", "author", "author_name", "body", "created_at")
+        read_only_fields = ("task", "author", "created_at")
 
 
 class ObjectiveMilestoneSerializer(serializers.ModelSerializer):

@@ -4,13 +4,13 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
 from accounts.views import profile_view
 
 api_patterns = [
-    path("auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("auth/", include("accounts.urls")),
+    path("", include("accounts.api_urls")),
+    path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("", include("core.urls")),
     path("", include("ai.urls")),
     path("", include("scheduling.urls")),

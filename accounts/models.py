@@ -23,6 +23,10 @@ class User(AbstractUser):
     is_student = models.BooleanField(default=False)
     is_expert = models.BooleanField(default=False)
     is_email_verified = models.BooleanField(default=False)
+    total_xp = models.PositiveIntegerField(default=0)
+    current_streak = models.PositiveIntegerField(default=0)
+    highest_streak = models.PositiveIntegerField(default=0)
+    fcm_token = models.TextField(blank=True)
 
     def __str__(self) -> str:
         return self.username
@@ -51,6 +55,118 @@ class ExpertProfile(models.Model):
 
     def __str__(self) -> str:
         return f"ExpertProfile<{self.user.username}>"
+
+
+class UserActivityLog(models.Model):
+    """Tracks user actions relevant to streaks, XP, and analytics."""
+
+    EVENT_TASK_COMPLETED = "task_completed"
+    EVENT_ASSIGNMENT_REQUESTED = "assignment_requested"
+    EVENT_ASSIGNMENT_ACCEPTED = "assignment_accepted"
+    EVENT_CHOICES = [
+        (EVENT_TASK_COMPLETED, "Task Completed"),
+        (EVENT_ASSIGNMENT_REQUESTED, "Assignment Requested"),
+        (EVENT_ASSIGNMENT_ACCEPTED, "Assignment Accepted"),
+    ]
+
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="activity_logs")
+    event_type = models.CharField(max_length=40, choices=EVENT_CHOICES)
+    related_id = models.PositiveIntegerField(null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+
+class Badge(models.Model):
+    """Badge definition used by the gamification system."""
+
+    name = models.CharField(max_length=120, unique=True)
+    slug = models.SlugField(max_length=120, unique=True)
+    image_url = models.URLField(blank=True)
+    condition = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("name",)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class UserBadge(models.Model):
+    """Badge awarded to a user."""
+
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="user_badges")
+    badge = models.ForeignKey(Badge, on_delete=models.CASCADE, related_name="awards")
+    awarded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "badge")
+        ordering = ("-awarded_at",)
+
+
+class ExpertAssignment(models.Model):
+    """Request-based relationship between a student and an expert."""
+
+    STATUS_PENDING = "pending"
+    STATUS_ACTIVE = "active"
+    STATUS_REJECTED = "rejected"
+    STATUS_EXPIRED = "expired"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_REJECTED, "Rejected"),
+        (STATUS_EXPIRED, "Expired"),
+    ]
+
+    student = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="sent_assignments")
+    expert = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="received_assignments")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    request_message = models.TextField(blank=True)
+    rejection_reason = models.TextField(blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+
+class Notification(models.Model):
+    """Student/expert notification with deep-link metadata."""
+
+    TYPE_ASSIGNMENT_REQUEST = "assignment_request"
+    TYPE_ASSIGNMENT_ACCEPTED = "assignment_accepted"
+    TYPE_ASSIGNMENT_REJECTED = "assignment_rejected"
+    TYPE_AI_ANALYSIS = "ai_analysis"
+    TYPE_TASK_DECOMPOSED = "task_decomposed"
+    TYPE_STREAK = "streak"
+    TYPE_GAMIFICATION = "gamification"
+    TYPE_SESSION_REMINDER = "session_reminder"
+    TYPE_CHOICES = [
+        (TYPE_ASSIGNMENT_REQUEST, "Assignment Request"),
+        (TYPE_ASSIGNMENT_ACCEPTED, "Assignment Accepted"),
+        (TYPE_ASSIGNMENT_REJECTED, "Assignment Rejected"),
+        (TYPE_AI_ANALYSIS, "AI Analysis"),
+        (TYPE_TASK_DECOMPOSED, "Task Decomposed"),
+        (TYPE_STREAK, "Streak"),
+        (TYPE_GAMIFICATION, "Gamification"),
+        (TYPE_SESSION_REMINDER, "Session Reminder"),
+    ]
+
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="notifications")
+    type = models.CharField(max_length=40, choices=TYPE_CHOICES)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    related_id = models.PositiveIntegerField(null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
 
 
 class EmailVerificationToken(models.Model):

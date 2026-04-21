@@ -6,8 +6,18 @@ from typing import Any
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from accounts.models import EmailVerificationToken, ExpertProfile, PasswordResetToken, StudentProfile
+from accounts.models import (
+    Badge,
+    EmailVerificationToken,
+    ExpertAssignment,
+    ExpertProfile,
+    Notification,
+    PasswordResetToken,
+    StudentProfile,
+    UserBadge,
+)
 
 User = get_user_model()
 
@@ -69,9 +79,55 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source="username", read_only=True)
+
     class Meta:
         model = User
-        fields = ("id", "username", "email", "is_student", "is_expert", "is_email_verified")
+        fields = (
+            "id",
+            "username",
+            "user_name",
+            "email",
+            "is_student",
+            "is_expert",
+            "is_email_verified",
+            "total_xp",
+            "current_streak",
+            "highest_streak",
+        )
+
+
+class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """JWT serializer that authenticates primarily by email."""
+
+    email = serializers.EmailField(required=False)
+    password = serializers.CharField(write_only=True)
+    username = serializers.CharField(required=False)
+
+    @classmethod
+    def get_token(cls, user: User):
+        token = super().get_token(user)
+        token["user_name"] = user.username
+        token["email"] = user.email
+        return token
+
+    def validate(self, attrs):
+        email = attrs.get("email")
+        username = attrs.get("username")
+        password = attrs.get("password")
+        if not password:
+            raise serializers.ValidationError({"password": "This field is required."})
+        if email:
+            user = User.objects.filter(email__iexact=email).first()
+            if user is None:
+                raise serializers.ValidationError({"email": "No user found with this email."})
+            username = user.username
+        if not username:
+            raise serializers.ValidationError({"email": "Email is required."})
+        data = super().validate({self.username_field: username, "password": password})
+        data["user"] = UserSerializer(self.user).data
+        data["user_name"] = self.user.username
+        return data
 
 
 class EmailVerificationRequestSerializer(serializers.Serializer):
@@ -105,3 +161,74 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         if token.expires_at <= timezone.now():
             raise serializers.ValidationError("Token expired.")
         return value
+
+
+class FCMTokenUpdateSerializer(serializers.Serializer):
+    fcm_token = serializers.CharField(max_length=4096)
+
+
+class ExpertListSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
+    user_name = serializers.CharField(source="user.username", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+
+    class Meta:
+        model = ExpertProfile
+        fields = ("id", "user_id", "user_name", "email", "expertise_tags", "bio")
+
+
+class BadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = ("id", "name", "slug", "image_url", "condition")
+
+
+class UserBadgeSerializer(serializers.ModelSerializer):
+    badge = BadgeSerializer(read_only=True)
+
+    class Meta:
+        model = UserBadge
+        fields = ("id", "badge", "awarded_at")
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ("id", "type", "title", "message", "related_id", "metadata", "is_read", "created_at")
+
+
+class AssignmentRequestSerializer(serializers.Serializer):
+    expert_id = serializers.IntegerField()
+    request_message = serializers.CharField(required=False, allow_blank=True)
+
+
+class AssignmentActionSerializer(serializers.Serializer):
+    reason = serializers.CharField(required=False, allow_blank=True)
+
+
+class ExpertAssignmentSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source="student.username", read_only=True)
+    expert_name = serializers.CharField(source="expert.username", read_only=True)
+
+    class Meta:
+        model = ExpertAssignment
+        fields = (
+            "id",
+            "student",
+            "student_name",
+            "expert",
+            "expert_name",
+            "status",
+            "request_message",
+            "rejection_reason",
+            "expires_at",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("student", "expert", "status", "rejection_reason", "expires_at", "created_at", "updated_at")
+
+
+class PaymentIntentRequestSerializer(serializers.Serializer):
+    amount = serializers.IntegerField(min_value=1)
+    currency = serializers.CharField(max_length=10, default="usd")
+    expert_id = serializers.IntegerField(required=False)

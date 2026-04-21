@@ -43,13 +43,18 @@ def test_time_estimate_endpoint(client: APIClient) -> None:
     client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
     resp = client.post(
         "/api/ai/time-estimate/",
-        {"title": "Implement a classifier", "description": "Build model and evaluate", "metadata": {"complexity": 2}},
+        {
+            "title": "Implement a classifier",
+            "description": "Build model and evaluate",
+            "metadata": {"complexity": 2, "specialty": "Artificial Intelligence", "task_type": "Model Training", "user_level": 2},
+        },
         format="json",
     )
     assert resp.status_code == 200
     body = resp.json()
     assert body["estimated_minutes"] > 0
     assert 0 <= body["confidence"] <= 1
+    assert body["source"] in {"informatics_task_times_synthetic_csv", "heuristic_fallback"}
 
 
 @pytest.mark.django_db
@@ -157,3 +162,47 @@ def test_dashboard_decompose_performance_and_portfolio(client: APIClient) -> Non
     assert len(lst.json()) >= 1
     detail = client.patch(f"/api/portfolio/projects/{project_id}/", {"description": "Updated"}, format="json")
     assert detail.status_code == 200
+
+
+@pytest.mark.django_db
+def test_generated_tasks_assignments_notifications_and_payments(client: APIClient) -> None:
+    student_token = _register_and_auth(client, "student_market")
+    expert_client = APIClient()
+    expert_token = _register_and_auth(expert_client, "expert_market", role="expert")
+
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {student_token}")
+    objective = client.post(
+        "/api/objectives/",
+        {"title": "Backend AI Goal", "description": "desc", "suggested_by": "ai", "status": "active"},
+        format="json",
+    )
+    assert objective.status_code == 201
+    objective_id = objective.json()["id"]
+
+    generated = client.post(
+        f"/api/objectives/{objective_id}/generate-tasks/",
+        {"user_level": "beginner", "count": 3},
+        format="json",
+    )
+    assert generated.status_code == 201
+    assert len(generated.json()["tasks"]) == 3
+
+    experts = client.get("/api/experts/?search=expert")
+    assert experts.status_code == 200
+    expert_user_id = experts.json()[0]["user_id"]
+    assign = client.post("/api/assignments/request/", {"expert_id": expert_user_id, "request_message": "Need help"}, format="json")
+    assert assign.status_code == 201
+    assignment_id = assign.json()["id"]
+
+    expert_client.credentials(HTTP_AUTHORIZATION=f"Bearer {expert_token}")
+    accept = expert_client.post(f"/api/trainer/assignments/{assignment_id}/accept/", {}, format="json")
+    assert accept.status_code == 200
+    assert accept.json()["status"] == "active"
+
+    notifications = client.get("/api/notifications/")
+    assert notifications.status_code == 200
+    assert any(item["type"] == "assignment_accepted" for item in notifications.json())
+
+    payment = client.post("/api/payments/intent/", {"amount": 5000, "currency": "usd"}, format="json")
+    assert payment.status_code == 200
+    assert "client_secret" in payment.json()

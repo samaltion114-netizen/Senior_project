@@ -1,24 +1,51 @@
 """Views for user registration and profile access."""
+from datetime import timedelta
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
+from django.conf import settings
+from django.db.models import Q
 from django.http import JsonResponse
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.views import APIView
 
-from accounts.models import EmailVerificationToken, PasswordResetToken
+from accounts.models import EmailVerificationToken, ExpertAssignment, ExpertProfile, Notification, PasswordResetToken, UserBadge
+from accounts.permissions import IsExpert, IsStudent
 from accounts.serializers import (
+    AssignmentActionSerializer,
+    AssignmentRequestSerializer,
     EmailVerificationConfirmSerializer,
     EmailVerificationRequestSerializer,
+    EmailTokenObtainPairSerializer,
+    ExpertAssignmentSerializer,
+    ExpertListSerializer,
+    FCMTokenUpdateSerializer,
+    NotificationSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
+    PaymentIntentRequestSerializer,
     RegisterSerializer,
+    UserBadgeSerializer,
     UserSerializer,
 )
+from accounts.services import create_notification, log_user_activity
+
+try:
+    import stripe
+except Exception:  # pragma: no cover - optional dependency fallback
+    stripe = None
 
 User = get_user_model()
+
+
+class EmailTokenObtainPairView(TokenObtainPairView):
+    """JWT login view using email + password."""
+
+    serializer_class = EmailTokenObtainPairSerializer
 
 
 class RegisterView(APIView):
@@ -42,6 +69,188 @@ class UserListView(generics.ListAPIView):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
     queryset = User.objects.all().order_by("id")
+
+
+class ExpertListView(generics.ListAPIView):
+    """List experts for marketplace screens with optional name search."""
+
+    serializer_class = ExpertListSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        search = self.request.query_params.get("search", "").strip()
+        queryset = ExpertProfile.objects.select_related("user").all().order_by("user__username")
+        if search:
+            queryset = queryset.filter(Q(user__username__icontains=search) | Q(user__first_name__icontains=search) | Q(user__last_name__icontains=search))
+        return queryset
+
+
+class FCMTokenUpdateView(APIView):
+    """Persist the current user's mobile push token."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(request=FCMTokenUpdateSerializer, responses={200: dict})
+    def post(self, request, *args, **kwargs) -> Response:
+        serializer = FCMTokenUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        request.user.fcm_token = serializer.validated_data["fcm_token"]
+        request.user.save(update_fields=["fcm_token"])
+        return Response({"detail": "FCM token updated."})
+
+
+class LeaderboardView(APIView):
+    """Return simple XP-based leaderboard with optional date filters."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs) -> Response:
+        filter_name = request.query_params.get("filter", "all").lower()
+        queryset = User.objects.filter(is_student=True).order_by("-total_xp", "-current_streak", "id")
+        rows = []
+        for index, user in enumerate(queryset[:50], start=1):
+            rows.append(
+                {
+                    "rank": index,
+                    "user_id": user.id,
+                    "user_name": user.username,
+                    "total_xp": user.total_xp,
+                    "current_streak": user.current_streak,
+                    "filter": filter_name,
+                }
+            )
+        return Response({"results": rows})
+
+
+class UserBadgesView(APIView):
+    """Return all badges earned by one user."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, id: int, *args, **kwargs) -> Response:
+        badges = UserBadge.objects.filter(user_id=id).select_related("badge")
+        return Response(UserBadgeSerializer(badges, many=True).data)
+
+
+class NotificationListView(APIView):
+    """List current user's notifications."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs) -> Response:
+        queryset = Notification.objects.filter(user=request.user)
+        return Response(NotificationSerializer(queryset, many=True).data)
+
+
+class AssignmentRequestView(APIView):
+    """Student requests collaboration with an expert."""
+
+    permission_classes = [permissions.IsAuthenticated, IsStudent]
+
+    @extend_schema(request=AssignmentRequestSerializer, responses={201: ExpertAssignmentSerializer})
+    def post(self, request, *args, **kwargs) -> Response:
+        serializer = AssignmentRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        expert = User.objects.filter(id=serializer.validated_data["expert_id"], is_expert=True).first()
+        if expert is None:
+            return Response({"detail": "Expert not found."}, status=status.HTTP_404_NOT_FOUND)
+        assignment = ExpertAssignment.objects.create(
+            student=request.user,
+            expert=expert,
+            request_message=serializer.validated_data.get("request_message", ""),
+        )
+        create_notification(
+            user=expert,
+            type=Notification.TYPE_ASSIGNMENT_REQUEST,
+            title="طلب إشراف جديد",
+            message=f"يرغب الطالب {request.user.username} في الانضمام إليك، هل تقبل؟",
+            related_id=assignment.id,
+        )
+        log_user_activity(user=request.user, event_type="assignment_requested", related_id=assignment.id)
+        return Response(ExpertAssignmentSerializer(assignment).data, status=status.HTTP_201_CREATED)
+
+
+class TrainerAssignmentAcceptView(APIView):
+    """Expert accepts a student assignment request."""
+
+    permission_classes = [permissions.IsAuthenticated, IsExpert]
+
+    def post(self, request, id: int, *args, **kwargs) -> Response:
+        assignment = ExpertAssignment.objects.filter(id=id, expert=request.user).first()
+        if assignment is None:
+            return Response({"detail": "Assignment not found."}, status=status.HTTP_404_NOT_FOUND)
+        assignment.status = ExpertAssignment.STATUS_ACTIVE
+        assignment.expires_at = timezone.now() + timedelta(days=30)
+        assignment.rejection_reason = ""
+        assignment.save(update_fields=["status", "expires_at", "rejection_reason", "updated_at"])
+        create_notification(
+            user=assignment.student,
+            type=Notification.TYPE_ASSIGNMENT_ACCEPTED,
+            title="Assignment accepted",
+            message=f"{request.user.username} accepted your mentorship request.",
+            related_id=assignment.id,
+        )
+        log_user_activity(user=assignment.student, event_type="assignment_accepted", related_id=assignment.id)
+        return Response(ExpertAssignmentSerializer(assignment).data)
+
+
+class TrainerAssignmentRejectView(APIView):
+    """Expert rejects a student assignment request."""
+
+    permission_classes = [permissions.IsAuthenticated, IsExpert]
+
+    @extend_schema(request=AssignmentActionSerializer, responses={200: ExpertAssignmentSerializer})
+    def post(self, request, id: int, *args, **kwargs) -> Response:
+        assignment = ExpertAssignment.objects.filter(id=id, expert=request.user).first()
+        if assignment is None:
+            return Response({"detail": "Assignment not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = AssignmentActionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        assignment.status = ExpertAssignment.STATUS_REJECTED
+        assignment.rejection_reason = serializer.validated_data.get("reason", "")
+        assignment.save(update_fields=["status", "rejection_reason", "updated_at"])
+        create_notification(
+            user=assignment.student,
+            type=Notification.TYPE_ASSIGNMENT_REJECTED,
+            title="Assignment rejected",
+            message=f"{request.user.username} rejected your mentorship request.",
+            related_id=assignment.id,
+            metadata={"reason": assignment.rejection_reason},
+        )
+        return Response(ExpertAssignmentSerializer(assignment).data)
+
+
+class PaymentIntentView(APIView):
+    """Create Stripe payment intent payload for Flutter payment sheet."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(request=PaymentIntentRequestSerializer, responses={200: dict})
+    def post(self, request, *args, **kwargs) -> Response:
+        serializer = PaymentIntentRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        if stripe is None:
+            return Response(
+                {
+                    "provider": "mock",
+                    "client_secret": f"mock_client_secret_{data['amount']}_{data['currency']}",
+                    "publishable_key": "",
+                }
+            )
+        stripe.api_key = getattr(settings, "STRIPE_SECRET_KEY", "")
+        intent = stripe.PaymentIntent.create(
+            amount=data["amount"],
+            currency=data["currency"],
+            metadata={"user_id": request.user.id, "expert_id": data.get("expert_id", "")},
+        )
+        return Response(
+            {
+                "provider": "stripe",
+                "client_secret": intent.client_secret,
+                "payment_intent_id": intent.id,
+            }
+        )
 
 
 class EmailVerificationRequestView(APIView):
@@ -125,9 +334,13 @@ def profile_view(request):
         {
             "id": user.id,
             "username": user.username,
+            "user_name": user.username,
             "email": user.email,
             "is_student": user.is_student,
             "is_expert": user.is_expert,
+            "total_xp": user.total_xp,
+            "current_streak": user.current_streak,
+            "highest_streak": user.highest_streak,
             "major": student_profile.major if student_profile else "",
             "current_status": student_profile.current_status if student_profile else "",
         }

@@ -2,14 +2,25 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from accounts.models import EmailVerificationToken, ExpertProfile, PasswordResetToken, StudentProfile, User
+from accounts.models import (
+    Badge,
+    EmailVerificationToken,
+    ExpertAssignment,
+    ExpertProfile,
+    Notification,
+    PasswordResetToken,
+    StudentProfile,
+    User,
+    UserActivityLog,
+    UserBadge,
+)
 
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     list_display = ("username", "email", "is_email_verified", "is_student", "is_expert", "is_staff")
     fieldsets = UserAdmin.fieldsets + (
-        ("Nahd Roles", {"fields": ("is_student", "is_expert")}),
+        ("Nahd Roles", {"fields": ("is_student", "is_expert", "total_xp", "current_streak", "highest_streak", "fcm_token")}),
     )
 
 
@@ -33,3 +44,30 @@ class EmailVerificationTokenAdmin(admin.ModelAdmin):
 class PasswordResetTokenAdmin(admin.ModelAdmin):
     list_display = ("user", "token", "expires_at", "used", "created_at")
     readonly_fields = ("token", "created_at")
+
+
+@admin.register(UserActivityLog)
+class UserActivityLogAdmin(admin.ModelAdmin):
+    list_display = ("user", "event_type", "related_id", "created_at")
+
+
+@admin.register(Badge)
+class BadgeAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "condition")
+
+
+@admin.register(UserBadge)
+class UserBadgeAdmin(admin.ModelAdmin):
+    list_display = ("user", "badge", "awarded_at")
+
+
+@admin.register(ExpertAssignment)
+class ExpertAssignmentAdmin(admin.ModelAdmin):
+    list_display = ("student", "expert", "status", "expires_at", "created_at")
+    list_filter = ("status",)
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ("user", "type", "title", "is_read", "created_at")
+    list_filter = ("type", "is_read")

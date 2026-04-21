@@ -40,15 +40,47 @@ class Objective(models.Model):
 class Task(models.Model):
     """Task under a given objective."""
 
+    STATUS_ACTIVE = "active"
+    STATUS_LOCKED = "locked"
+    STATUS_COMPLETED = "completed"
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_LOCKED, "Locked"),
+        (STATUS_COMPLETED, "Completed"),
+    ]
+
+    TYPE_STANDARD = "standard"
+    TYPE_REMEDIAL = "remedial"
+    TYPE_CHOICES = [
+        (TYPE_STANDARD, "Standard"),
+        (TYPE_REMEDIAL, "Remedial"),
+    ]
+
+    DIFFICULTY_EASY = "easy"
+    DIFFICULTY_MEDIUM = "medium"
+    DIFFICULTY_HARD = "hard"
+    DIFFICULTY_CHOICES = [
+        (DIFFICULTY_EASY, "Easy"),
+        (DIFFICULTY_MEDIUM, "Medium"),
+        (DIFFICULTY_HARD, "Hard"),
+    ]
+
     objective = models.ForeignKey(Objective, on_delete=models.CASCADE, related_name="tasks")
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default=TYPE_STANDARD)
+    difficulty_level = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default=DIFFICULTY_MEDIUM)
+    task_size = models.CharField(max_length=20, default="medium")
+    xp_reward = models.PositiveIntegerField(default=20)
     estimated_minutes = models.PositiveIntegerField(default=30)
     estimation_confidence = models.FloatField(default=0.5)
     order = models.PositiveIntegerField(default=1)
     metadata = models.JSONField(default=dict, blank=True)
     expected_output_text = models.TextField(blank=True)
     expected_output_embedding = models.JSONField(default=list, blank=True)
+    youtube_link_ar = models.URLField(blank=True)
+    youtube_link_en = models.URLField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -184,3 +216,15 @@ class PortfolioAsset(models.Model):
     file = models.FileField(upload_to=portfolio_asset_path)
     caption = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class TaskComment(models.Model):
+    """Contextual comment from expert/student on a task."""
+
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="comments")
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="task_comments")
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("created_at", "id")

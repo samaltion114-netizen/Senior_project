@@ -6,6 +6,8 @@ from typing import Any
 from PIL import Image, ImageFilter, ImageStat
 from django.db import transaction
 
+from accounts.models import Notification
+from accounts.services import create_notification
 from ai.models import AIEventLog
 from ai.models import AIModelWeight
 from ai.services import get_ai_service, hash_text
@@ -87,6 +89,14 @@ def run_proof_analysis(proof: Proof) -> Proof:
         prompt_hash=hash_text(prompt),
         response_hash=hash_text(response),
         embeddings_metadata={"proof_id": proof.id},
+    )
+    create_notification(
+        user=proof.session.student,
+        type=Notification.TYPE_AI_ANALYSIS,
+        title="Proof analysis ready",
+        message="AI finished analyzing your submitted proof.",
+        related_id=proof.id,
+        metadata={"matches_expected": analysis.get("matches_expected", False)},
     )
     return proof
 

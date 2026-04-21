@@ -1,6 +1,7 @@
 """AI services abstraction layer for Nahd."""
 from __future__ import annotations
 
+import csv
 import hashlib
 import math
 import os
@@ -9,6 +10,7 @@ from abc import ABC, abstractmethod
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
+from functools import lru_cache
 from typing import Any
 
 from django.conf import settings
@@ -43,6 +45,156 @@ def cosine_similarity(a: dict[str, float], b: dict[str, float]) -> float:
     if not na or not nb:
         return 0.0
     return dot / (na * nb)
+
+
+@lru_cache(maxsize=1)
+def load_task_time_dataset() -> list[dict[str, Any]]:
+    """Load the synthetic task-time dataset used by the backend estimator."""
+    path = settings.AI_TASK_TIME_DATASET
+    if not path or not os.path.exists(path):
+        return []
+    rows: list[dict[str, Any]] = []
+    with open(path, "r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            try:
+                rows.append(
+                    {
+                        "specialty": sanitize_text(row["specialty"]).lower(),
+                        "task_type": sanitize_text(row["task_type"]).lower(),
+                        "task_size": int(float(row["task_size"])),
+                        "difficulty": int(float(row["difficulty"])),
+                        "user_level": int(float(row["user_level"])),
+                        "actual_minutes": int(float(row["actual_minutes"])),
+                    }
+                )
+            except (KeyError, TypeError, ValueError):
+                continue
+    return rows
+
+
+def normalize_specialty(payload: dict[str, Any]) -> str:
+    """Infer dataset specialty from explicit metadata or task text."""
+    metadata = payload.get("metadata", {}) or {}
+    specialty = str(payload.get("specialty") or metadata.get("specialty") or "").strip()
+    if specialty:
+        return specialty.lower()
+    text = f"{payload.get('title', '')} {payload.get('description', '')}".lower()
+    if any(token in text for token in ["network", "protocol", "security", "router"]):
+        return "computer networks"
+    if any(token in text for token in ["ai", "model", "ml", "classifier", "training"]):
+        return "artificial intelligence"
+    return "software engineering"
+
+
+def normalize_task_type(payload: dict[str, Any]) -> str:
+    """Map API payloads to dataset task-type labels."""
+    metadata = payload.get("metadata", {}) or {}
+    explicit = str(payload.get("task_type") or payload.get("type") or metadata.get("task_type") or "").strip()
+    if explicit:
+        return explicit.lower()
+    text = f"{payload.get('title', '')} {payload.get('description', '')}".lower()
+    if any(token in text for token in ["document", "readme", "docs", "documentation"]):
+        return "reading documentation"
+    if any(token in text for token in ["review", "audit"]):
+        return "code review"
+    if any(token in text for token in ["train", "classifier", "model"]):
+        return "model training"
+    if any(token in text for token in ["network", "protocol"]):
+        return "reading protocols"
+    return "writing code"
+
+
+def normalize_task_size(payload: dict[str, Any]) -> int:
+    """Convert API task-size representations to the numeric dataset scale."""
+    metadata = payload.get("metadata", {}) or {}
+    raw = payload.get("task_size", metadata.get("task_size"))
+    if isinstance(raw, (int, float)):
+        return max(1, int(raw))
+    if isinstance(raw, str) and raw.strip():
+        lowered = raw.strip().lower()
+        if lowered.isdigit():
+            return max(1, int(lowered))
+        return {"small": 5, "medium": 12, "large": 20}.get(lowered, 10)
+    words = len(re.findall(r"\w+", f"{payload.get('title', '')} {payload.get('description', '')}"))
+    return max(1, min(24, math.ceil(words / 6) or 1))
+
+
+def normalize_difficulty(payload: dict[str, Any]) -> int:
+    """Convert difficulty fields to the dataset's numeric 1-3 scale."""
+    metadata = payload.get("metadata", {}) or {}
+    raw = payload.get("difficulty_level", metadata.get("difficulty"))
+    if isinstance(raw, (int, float)):
+        return min(3, max(1, int(raw)))
+    if isinstance(raw, str) and raw.strip():
+        return {"easy": 1, "medium": 2, "hard": 3}.get(raw.strip().lower(), 2)
+    complexity = metadata.get("complexity")
+    if isinstance(complexity, (int, float)):
+        return min(3, max(1, int(complexity)))
+    return 2
+
+
+def normalize_user_level(payload: dict[str, Any]) -> int:
+    """Convert user-level representations to the dataset's numeric 1-3 scale."""
+    metadata = payload.get("metadata", {}) or {}
+    raw = payload.get("user_level", metadata.get("user_level"))
+    if isinstance(raw, (int, float)):
+        return min(3, max(1, int(raw)))
+    if isinstance(raw, str) and raw.strip():
+        return {
+            "beginner": 1,
+            "intermediate": 2,
+            "advanced": 3,
+        }.get(raw.strip().lower(), 2)
+    return 2
+
+
+def dataset_time_estimate(payload: dict[str, Any]) -> dict[str, Any] | None:
+    """Estimate task duration from the synthetic CSV using nearest-neighbor scoring."""
+    dataset = load_task_time_dataset()
+    if not dataset:
+        return None
+
+    specialty = normalize_specialty(payload)
+    task_type = normalize_task_type(payload)
+    task_size = normalize_task_size(payload)
+    difficulty = normalize_difficulty(payload)
+    user_level = normalize_user_level(payload)
+
+    ranked: list[tuple[float, dict[str, Any]]] = []
+    for row in dataset:
+        score = 0.0
+        if row["specialty"] == specialty:
+            score += 6.0
+        if row["task_type"] == task_type:
+            score += 5.0
+        score += max(0.0, 3.0 - abs(row["difficulty"] - difficulty) * 1.5)
+        score += max(0.0, 3.0 - abs(row["user_level"] - user_level) * 1.5)
+        score += max(0.0, 4.0 - abs(row["task_size"] - task_size) / 4.0)
+        if score > 0:
+            ranked.append((score, row))
+
+    if not ranked:
+        return None
+
+    ranked.sort(key=lambda item: item[0], reverse=True)
+    top = ranked[: min(15, len(ranked))]
+    total_weight = sum(score for score, _ in top) or 1.0
+    weighted_minutes = sum(score * row["actual_minutes"] for score, row in top) / total_weight
+    confidence = min(0.97, 0.55 + (top[0][0] / 21.0) * 0.4)
+    return {
+        "estimated_minutes": int(round(weighted_minutes)),
+        "confidence": round(confidence, 2),
+        "source": "informatics_task_times_synthetic_csv",
+        "features": {
+            "specialty": specialty,
+            "task_type": task_type,
+            "task_size": task_size,
+            "difficulty": difficulty,
+            "user_level": user_level,
+            "matched_rows": len(top),
+        },
+    }
 
 
 class InterviewAgent(ABC):
@@ -104,6 +256,81 @@ class MockAIService(InterviewAgent, ObjectiveScorer, TimeEstimator, ScheduleOpti
             "description": "Complete fundamentals in software, networks, and AI track selection.",
         }
 
+    def validate_or_generate_tasks(
+        self,
+        *,
+        objective_title: str,
+        task_name: str = "",
+        user_level: str = "intermediate",
+        count: int = 5,
+    ) -> dict[str, Any]:
+        """Validate one task against an objective or generate tasks with resources."""
+        objective_lower = objective_title.lower()
+
+        def infer_task(task_label: str, position: int) -> dict[str, Any]:
+            label = sanitize_text(task_label)
+            lowered = label.lower()
+            if any(token in lowered for token in ["read", "document", "protocol"]):
+                task_type = "reading"
+                youtube_suffix = "documentation"
+            elif any(token in lowered for token in ["review", "audit"]):
+                task_type = "review"
+                youtube_suffix = "review"
+            elif any(token in lowered for token in ["watch", "video"]):
+                task_type = "watching"
+                youtube_suffix = "tutorial"
+            elif any(token in lowered for token in ["exercise", "practice"]):
+                task_type = "exercise"
+                youtube_suffix = "practice"
+            else:
+                task_type = "coding"
+                youtube_suffix = "implementation"
+
+            difficulty = "easy" if position == 1 else "medium" if position < max(count, 3) else "hard"
+            size = "small" if position == 1 else "medium" if position < max(count, 4) else "large"
+            slug = re.sub(r"[^a-z0-9]+", "-", lowered).strip("-") or f"task-{position}"
+            return {
+                "task_name": label,
+                "task_type": task_type,
+                "task_size": size,
+                "difficulty": difficulty,
+                "youtube_link_ar": f"https://youtube.com/results?search_query={slug}+arabic+{youtube_suffix}",
+                "youtube_link_en": f"https://youtube.com/results?search_query={slug}+english+{youtube_suffix}",
+                "xp_reward": {"easy": 10, "medium": 20, "hard": 40}[difficulty],
+                "type": "standard",
+                "user_level": user_level,
+            }
+
+        if task_name:
+            task_lower = task_name.lower()
+            objective_is_legal = any(token in objective_lower for token in ["law", "legal", "contract"])
+            task_is_legal = any(token in task_lower for token in ["law", "legal", "contract"])
+            objective_is_technical = any(
+                token in objective_lower for token in ["software", "backend", "django", "api", "network", "ai", "training"]
+            )
+            task_is_technical = any(
+                token in task_lower for token in ["implement", "build", "code", "api", "model", "network", "docs", "classifier", "test"]
+            )
+            is_valid = (
+                any(token in objective_lower for token in task_lower.split()[:2])
+                or any(token in task_lower for token in objective_lower.split()[:3])
+                or (objective_is_legal and task_is_legal)
+                or (objective_is_technical and task_is_technical)
+                or not task_lower.strip()
+            )
+            tasks = [infer_task(task_name, 1)] if is_valid else []
+            return {"is_valid": is_valid, "tasks": tasks}
+
+        seed = [
+            f"Study fundamentals for {objective_title}",
+            f"Build first practical deliverable for {objective_title}",
+            f"Test and debug core workflow for {objective_title}",
+            f"Document and refine {objective_title}",
+            f"Publish final portfolio artifact for {objective_title}",
+        ]
+        generated = [infer_task(name, idx) for idx, name in enumerate(seed[:count], start=1)]
+        return {"is_valid": True, "tasks": generated}
+
     def process_message(self, history: list[dict[str, str]], message: str) -> dict[str, Any]:
         normalized = sanitize_text(message)
         completed = len(history) >= 3 or any(k in normalized.lower() for k in ["goal", "training", "internship", "ai"])
@@ -118,12 +345,15 @@ class MockAIService(InterviewAgent, ObjectiveScorer, TimeEstimator, ScheduleOpti
         return round(cosine_similarity(text_to_embedding(objective_title), text_to_embedding(student_goal)), 4)
 
     def estimate_time(self, task_payload: dict[str, Any]) -> dict[str, Any]:
+        dataset_result = dataset_time_estimate(task_payload)
+        if dataset_result is not None:
+            return dataset_result
         text = f"{task_payload.get('title', '')} {task_payload.get('description', '')}"
         words = len(re.findall(r"\w+", text))
         complexity = float(task_payload.get("metadata", {}).get("complexity", 1))
         predicted = int(max(20, min(240, words * 2 + complexity * 15)))
         confidence = round(min(0.95, 0.55 + min(words / 200, 0.35)), 2)
-        return {"estimated_minutes": predicted, "confidence": confidence}
+        return {"estimated_minutes": predicted, "confidence": confidence, "source": "heuristic_fallback"}
 
     def optimize_schedule(self, payload: dict[str, Any]) -> list[dict[str, Any]]:
         availability = payload["weekly_availability"]

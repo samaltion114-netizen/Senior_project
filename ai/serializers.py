@@ -30,6 +30,11 @@ class TimeEstimateRequestSerializer(serializers.Serializer):
     metadata = serializers.JSONField(required=False, default=dict)
 
 
+class TaskGenerationRequestSerializer(serializers.Serializer):
+    user_level = serializers.ChoiceField(choices=["beginner", "intermediate", "advanced"], required=False, default="intermediate")
+    count = serializers.IntegerField(min_value=1, max_value=10, default=5)
+
+
 class ModelWeightSelectSerializer(serializers.Serializer):
     capability = serializers.ChoiceField(
         choices=["all", "interview", "tagging", "time_estimation", "scheduling", "proof_analysis", "challenge_generation"]

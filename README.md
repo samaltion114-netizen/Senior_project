@@ -74,6 +74,11 @@ No secrets are committed.
 - `POST /api/objectives/{id}/tasks/` (auto estimation)
 - `POST /api/schedule/optimize/`
 
+Time-estimation dataset used by the backend:
+- `ai/data/Informatics_task_times_synthetic.csv`
+- configured through `AI_TASK_TIME_DATASET`
+- treated as backend AI data, not a model weight file
+
 ### 3) Intelligent Tagging + Checklist
 - `POST /api/ai/tagging/informatics/`
 - `POST /api/ai/tagging/legal/`
@@ -125,13 +130,27 @@ curl -X POST http://localhost/api/ai/models/select/ \
 ## Required Core Endpoints
 - `POST /api/auth/register/`
 - `POST /api/auth/token/`
+- `POST /api/auth/update-fcm-token/`
 - `GET /api/objectives/`
 - `POST /api/objectives/`
+- `GET/PATCH/DELETE /api/objectives/{id}/`
 - `POST /api/objectives/{id}/tasks/`
+- `POST /api/objectives/{id}/generate-tasks/`
+- `GET/PATCH/DELETE /api/tasks/{id}/`
+- `POST /api/tasks/{id}/complete/`
+- `POST /api/tasks/{id}/comments/`
 - `POST /api/schedule/optimize/`
 - `POST /api/sessions/{id}/complete/`
 - `GET /api/proofs/{id}/analysis/`
 - `GET /api/challenges/`
+- `GET /api/experts/?search=<name>`
+- `POST /api/assignments/request/`
+- `POST /api/trainer/assignments/{id}/accept/`
+- `POST /api/trainer/assignments/{id}/reject/`
+- `GET /api/notifications/`
+- `GET /api/leaderboard/?filter=daily`
+- `GET /api/users/{id}/badges/`
+- `POST /api/payments/intent/`
 
 ## Professional Non-AI Features Added
 
@@ -151,6 +170,18 @@ Registration now creates email verification token (development output in console
 ### Health Endpoints
 - `GET /api/health/live/`
 - `GET /api/health/ready/` (includes DB readiness check)
+
+### Gamification + Collaboration
+- XP/streak fields on users
+- task status/type/difficulty/xp/youtube links
+- leaderboard + badges + activity log
+- expert assignment request/accept/reject flow
+- notification records for assignment actions, proof analysis, decomposition, and gamification
+- task comments gated by active expert assignment
+
+### Payments
+- `POST /api/payments/intent/`
+- uses Stripe when configured, otherwise returns a mock `client_secret` for backend/dev flow
 
 ### Standardized Error Responses
 All DRF errors now use one shape:
