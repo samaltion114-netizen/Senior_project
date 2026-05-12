@@ -50,8 +50,15 @@ class ExpertProfile(models.Model):
     """Extended expert profile used for interviews and recommendations."""
 
     user = models.OneToOneField("accounts.User", on_delete=models.CASCADE, related_name="expert_profile")
+    expertise_level = models.CharField(max_length=20, default="junior")
+    subscription_price = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    max_students = models.PositiveIntegerField(default=1)
     expertise_tags = models.JSONField(default=list, blank=True)
+    availability_schedule = models.JSONField(default=dict, blank=True)
     bio = models.TextField(blank=True)
+    is_accepting_new_students = models.BooleanField(default=True)
+    wallet_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    average_rating = models.DecimalField(max_digits=4, decimal_places=2, default=0)
 
     def __str__(self) -> str:
         return f"ExpertProfile<{self.user.username}>"
@@ -111,11 +118,13 @@ class ExpertAssignment(models.Model):
     """Request-based relationship between a student and an expert."""
 
     STATUS_PENDING = "pending"
+    STATUS_AWAITING_PAYMENT = "awaiting_payment"
     STATUS_ACTIVE = "active"
     STATUS_REJECTED = "rejected"
     STATUS_EXPIRED = "expired"
     STATUS_CHOICES = [
         (STATUS_PENDING, "Pending"),
+        (STATUS_AWAITING_PAYMENT, "Awaiting Payment"),
         (STATUS_ACTIVE, "Active"),
         (STATUS_REJECTED, "Rejected"),
         (STATUS_EXPIRED, "Expired"),

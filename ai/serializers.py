@@ -35,6 +35,12 @@ class TaskGenerationRequestSerializer(serializers.Serializer):
     count = serializers.IntegerField(min_value=1, max_value=10, default=5)
 
 
+class MindmapGenerateRequestSerializer(serializers.Serializer):
+    topic = serializers.CharField(min_length=3, max_length=255)
+    context = serializers.CharField(required=False, allow_blank=True, default="", max_length=4000)
+    max_branches = serializers.IntegerField(min_value=2, max_value=12, default=6)
+
+
 class ModelWeightSelectSerializer(serializers.Serializer):
     capability = serializers.ChoiceField(
         choices=["all", "interview", "tagging", "time_estimation", "scheduling", "proof_analysis", "challenge_generation"]

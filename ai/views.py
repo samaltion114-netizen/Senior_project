@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
 
 from django.conf import settings
 from django.db import transaction
+from django.http import FileResponse
 from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, status
 from rest_framework.response import Response
@@ -14,6 +16,7 @@ from ai.models import AIEventLog, AIModelWeight, InterviewConversation, Intervie
 from ai.serializers import (
     DailyChallengeRequestSerializer,
     InterviewMessageSerializer,
+    MindmapGenerateRequestSerializer,
     ModelWeightSelectSerializer,
     TaggingChecklistSerializer,
     TimeEstimateRequestSerializer,
@@ -198,3 +201,43 @@ class ModelWeightSelectView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class MindmapSvgView(APIView):
+    """Serve the integrated AI mindmap SVG."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs) -> Response:
+        svg_path = Path(settings.AI_MINDMAP_SVG_PATH)
+        if not svg_path.exists():
+            return Response({"detail": "Mindmap SVG not found. Run import_najem_assets."}, status=status.HTTP_404_NOT_FOUND)
+        return FileResponse(svg_path.open("rb"), content_type="image/svg+xml")
+
+
+class MindmapGenerateView(APIView):
+    """Generate mindmap JSON from topic/context using selected AI model."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(request=MindmapGenerateRequestSerializer, responses={200: dict})
+    def post(self, request, *args, **kwargs) -> Response:
+        serializer = MindmapGenerateRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        payload = serializer.validated_data
+        service = get_ai_service(capability=AIModelWeight.CAPABILITY_ALL)
+        result = service.generate_mindmap(
+            topic=payload["topic"],
+            context=payload.get("context", ""),
+            max_branches=payload["max_branches"],
+        )
+        AIEventLog.objects.create(
+            user=request.user,
+            event_type="mindmap_generate",
+            prompt=f"{payload['topic']}\n{payload.get('context', '')}",
+            response=str(result),
+            prompt_hash=hash_text(f"{payload['topic']}\n{payload.get('context', '')}"),
+            response_hash=hash_text(str(result)),
+            embeddings_metadata={"max_branches": payload["max_branches"]},
+        )
+        return Response(result)

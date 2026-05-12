@@ -1,6 +1,7 @@
 """Serializers for accounts app."""
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Any
 
 from django.contrib.auth import get_user_model
@@ -36,6 +37,10 @@ class RegisterSerializer(serializers.ModelSerializer):
     timezone = serializers.CharField(required=False, allow_blank=True, default="UTC")
     expertise_tags = serializers.ListField(child=serializers.CharField(), required=False)
     bio = serializers.CharField(required=False, allow_blank=True)
+    expertise_level = serializers.ChoiceField(choices=["junior", "certified", "senior"], required=False, default="junior")
+    subscription_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, min_value=Decimal("0.01"))
+    max_students = serializers.IntegerField(required=False, min_value=1, default=1)
+    availability_schedule = serializers.JSONField(required=False, default=dict)
 
     class Meta:
         model = User
@@ -50,6 +55,10 @@ class RegisterSerializer(serializers.ModelSerializer):
             "timezone",
             "expertise_tags",
             "bio",
+            "expertise_level",
+            "subscription_price",
+            "max_students",
+            "availability_schedule",
         )
 
     def create(self, validated_data: dict[str, Any]) -> User:
@@ -60,6 +69,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         timezone = validated_data.pop("timezone", "UTC")
         expertise_tags = validated_data.pop("expertise_tags", [])
         bio = validated_data.pop("bio", "")
+        expertise_level = validated_data.pop("expertise_level", "junior")
+        subscription_price = validated_data.pop("subscription_price", None)
+        max_students = validated_data.pop("max_students", 1)
+        availability_schedule = validated_data.pop("availability_schedule", {})
         password = validated_data.pop("password")
 
         user = User(**validated_data)
@@ -77,12 +90,21 @@ class RegisterSerializer(serializers.ModelSerializer):
                 timezone=timezone,
             )
         elif user.is_expert:
-            ExpertProfile.objects.create(user=user, expertise_tags=expertise_tags, bio=bio)
+            ExpertProfile.objects.create(
+                user=user,
+                expertise_tags=expertise_tags,
+                bio=bio,
+                expertise_level=expertise_level,
+                subscription_price=subscription_price or 1,
+                max_students=max_students,
+                availability_schedule=availability_schedule,
+            )
         return user
 
 
 class UserSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source="username", read_only=True)
+    user_profile = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -97,7 +119,43 @@ class UserSerializer(serializers.ModelSerializer):
             "total_xp",
             "current_streak",
             "highest_streak",
+            "user_profile",
         )
+
+    def get_user_profile(self, obj: User) -> dict[str, Any]:
+        profile: dict[str, Any] = {
+            "id": obj.id,
+            "email": obj.email,
+            "first_name": obj.first_name,
+            "last_name": obj.last_name,
+            "user_name": obj.username,
+            "role": "expert" if obj.is_expert else "student" if obj.is_student else "user",
+        }
+        if obj.is_student and hasattr(obj, "student_profile"):
+            profile.update(
+                {
+                    "major": obj.student_profile.major,
+                    "current_status": obj.student_profile.current_status,
+                    "goal_text": obj.student_profile.goal_text,
+                    "total_xp": obj.total_xp,
+                    "streaks": obj.current_streak,
+                }
+            )
+        if obj.is_expert and hasattr(obj, "expert_profile"):
+            profile.update(
+                {
+                    "expertise_level": obj.expert_profile.expertise_level,
+                    "subscription_price": obj.expert_profile.subscription_price,
+                    "max_students": obj.expert_profile.max_students,
+                    "bio": obj.expert_profile.bio,
+                    "expertise_tags": obj.expert_profile.expertise_tags,
+                    "availability_schedule": obj.expert_profile.availability_schedule,
+                    "is_accepting_new_students": obj.expert_profile.is_accepting_new_students,
+                    "wallet_balance": obj.expert_profile.wallet_balance,
+                    "average_rating": obj.expert_profile.average_rating,
+                }
+            )
+        return profile
 
 
 class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -177,7 +235,21 @@ class ExpertListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ExpertProfile
-        fields = ("id", "user_id", "user_name", "email", "expertise_tags", "bio")
+        fields = (
+            "id",
+            "user_id",
+            "user_name",
+            "email",
+            "expertise_level",
+            "subscription_price",
+            "max_students",
+            "expertise_tags",
+            "availability_schedule",
+            "is_accepting_new_students",
+            "bio",
+            "wallet_balance",
+            "average_rating",
+        )
 
 
 class BadgeSerializer(serializers.ModelSerializer):
@@ -232,9 +304,10 @@ class ExpertAssignmentSerializer(serializers.ModelSerializer):
 
 
 class PaymentIntentRequestSerializer(serializers.Serializer):
-    amount = serializers.IntegerField(min_value=1)
+    amount = serializers.IntegerField(min_value=1, required=False)
     currency = serializers.CharField(max_length=10, default="usd")
     expert_id = serializers.IntegerField(required=False)
+    assignment_id = serializers.IntegerField(required=False)
 
 
 class ChatMessageCreateSerializer(serializers.Serializer):

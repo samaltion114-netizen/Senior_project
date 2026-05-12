@@ -1,4 +1,5 @@
 """Views for user registration and profile access."""
+from decimal import Decimal
 from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
@@ -96,6 +97,7 @@ class ExpertListView(generics.ListAPIView):
     def get_queryset(self):
         search = self.request.query_params.get("search", "").strip()
         queryset = ExpertProfile.objects.select_related("user").all().order_by("user__username")
+        queryset = queryset.filter(is_accepting_new_students=True)
         if search:
             queryset = queryset.filter(Q(user__username__icontains=search) | Q(user__first_name__icontains=search) | Q(user__last_name__icontains=search))
         return queryset
@@ -205,16 +207,15 @@ class TrainerAssignmentAcceptView(APIView):
         assignment = ExpertAssignment.objects.filter(id=id, expert=request.user).first()
         if assignment is None:
             return Response({"detail": "Assignment not found."}, status=status.HTTP_404_NOT_FOUND)
-        assignment.status = ExpertAssignment.STATUS_ACTIVE
-        assignment.expires_at = timezone.now() + timedelta(days=30)
+        assignment.status = ExpertAssignment.STATUS_AWAITING_PAYMENT
+        assignment.expires_at = None
         assignment.rejection_reason = ""
         assignment.save(update_fields=["status", "expires_at", "rejection_reason", "updated_at"])
-        ChatThread.objects.get_or_create(assignment=assignment)
         create_notification(
             user=assignment.student,
             type=Notification.TYPE_ASSIGNMENT_ACCEPTED,
             title="Assignment accepted",
-            message=f"{request.user.username} accepted your mentorship request.",
+            message=f"{request.user.username} accepted your request. Complete payment to start chat.",
             related_id=assignment.id,
         )
         log_user_activity(user=assignment.student, event_type="assignment_accepted", related_id=assignment.id)
@@ -307,17 +308,33 @@ class PaymentIntentView(APIView):
         serializer = PaymentIntentRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        expert = User.objects.filter(id=data.get("expert_id"), is_expert=True).first() if data.get("expert_id") else None
+        assignment = None
+        if data.get("assignment_id"):
+            assignment = ExpertAssignment.objects.filter(
+                id=data["assignment_id"],
+                student=request.user,
+                status=ExpertAssignment.STATUS_AWAITING_PAYMENT,
+            ).select_related("expert__expert_profile").first()
+            if assignment is None:
+                return Response({"detail": "Assignment not found or not payable."}, status=status.HTTP_404_NOT_FOUND)
+        expert = assignment.expert if assignment else (User.objects.filter(id=data.get("expert_id"), is_expert=True).first() if data.get("expert_id") else None)
+        amount = data.get("amount")
+        if amount is None:
+            if assignment and hasattr(assignment.expert, "expert_profile"):
+                amount = int(float(assignment.expert.expert_profile.subscription_price) * 100)
+            else:
+                return Response({"detail": "amount is required."}, status=status.HTTP_400_BAD_REQUEST)
         if stripe is None:
             payment = PaymentRecord.objects.create(
                 user=request.user,
                 expert=expert,
                 provider="mock",
-                amount=data["amount"],
+                amount=amount,
                 currency=data["currency"],
                 payment_intent_id=f"mock_pi_{request.user.id}_{timezone.now().timestamp()}",
-                client_secret=f"mock_client_secret_{data['amount']}_{data['currency']}",
+                client_secret=f"mock_client_secret_{amount}_{data['currency']}",
                 status=PaymentRecord.STATUS_PENDING,
+                metadata={"assignment_id": assignment.id if assignment else None},
             )
             return Response(
                 {
@@ -329,7 +346,7 @@ class PaymentIntentView(APIView):
             )
         stripe.api_key = getattr(settings, "STRIPE_SECRET_KEY", "")
         intent = stripe.PaymentIntent.create(
-            amount=data["amount"],
+            amount=amount,
             currency=data["currency"],
             metadata={"user_id": request.user.id, "expert_id": data.get("expert_id", "")},
         )
@@ -339,11 +356,11 @@ class PaymentIntentView(APIView):
                 "user": request.user,
                 "expert": expert,
                 "provider": "stripe",
-                "amount": data["amount"],
+                "amount": amount,
                 "currency": data["currency"],
                 "client_secret": intent.client_secret,
                 "status": PaymentRecord.STATUS_PENDING,
-                "metadata": {"expert_id": data.get("expert_id", "")},
+                "metadata": {"expert_id": data.get("expert_id", ""), "assignment_id": assignment.id if assignment else None},
             },
         )
         return Response(
@@ -381,6 +398,24 @@ class StripeWebhookView(APIView):
         payment.status = PaymentRecord.STATUS_SUCCEEDED if data["status"] == "succeeded" else PaymentRecord.STATUS_FAILED
         payment.metadata = {**payment.metadata, **data.get("metadata", {})}
         payment.save(update_fields=["status", "metadata", "updated_at"])
+        if payment.status == PaymentRecord.STATUS_SUCCEEDED:
+            assignment_id = payment.metadata.get("assignment_id")
+            if assignment_id:
+                assignment = ExpertAssignment.objects.filter(
+                    id=assignment_id,
+                    student=payment.user,
+                    expert=payment.expert,
+                    status=ExpertAssignment.STATUS_AWAITING_PAYMENT,
+                ).first()
+                if assignment is not None:
+                    assignment.status = ExpertAssignment.STATUS_ACTIVE
+                    assignment.expires_at = timezone.now() + timedelta(days=30)
+                    assignment.save(update_fields=["status", "expires_at", "updated_at"])
+                    ChatThread.objects.get_or_create(assignment=assignment)
+                    if payment.expert and hasattr(payment.expert, "expert_profile"):
+                        profile = payment.expert.expert_profile
+                        profile.wallet_balance = (profile.wallet_balance or Decimal("0")) + (Decimal(payment.amount) / Decimal("100"))
+                        profile.save(update_fields=["wallet_balance"])
         return Response(PaymentRecordSerializer(payment).data)
 
 

@@ -3,9 +3,12 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import json
 import math
 import os
 import re
+import urllib.error
+import urllib.request
 from abc import ABC, abstractmethod
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -530,6 +533,24 @@ class MockAIService(InterviewAgent, ObjectiveScorer, TimeEstimator, ScheduleOpti
             }
         ]
 
+    def generate_mindmap(self, topic: str, context: str = "", max_branches: int = 6) -> dict[str, Any]:
+        base = sanitize_text(topic)
+        context_text = sanitize_text(context)
+        hints = re.findall(r"[A-Za-z0-9_]+", context_text)[: max(0, max_branches - 1)]
+        default_branches = ["Overview", "Requirements", "Architecture", "Implementation", "Testing", "Deployment"]
+        merged = []
+        for label in hints + default_branches:
+            if label not in merged:
+                merged.append(label)
+            if len(merged) >= max_branches:
+                break
+        return {
+            "topic": base,
+            "branches": [{"title": title, "children": []} for title in merged],
+            "provider": "mock",
+            "model_loaded": getattr(self, "model_info", {"loaded": False}),
+        }
+
 
 class OpenAIAdapter(MockAIService):
     """Example adapter shape for real providers; currently delegates to mock logic.
@@ -569,7 +590,136 @@ class LocalWeightsAdapter(MockAIService):
             "reason": "ready" if exists else "weight path not found",
         }
 
-    # TODO: Override inference methods to run your local model framework.
+    def _extract_json_object(self, text: str) -> dict[str, Any] | None:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start == -1 or end == -1 or end <= start:
+            return None
+        candidate = text[start : end + 1]
+        try:
+            parsed = json.loads(candidate)
+            return parsed if isinstance(parsed, dict) else None
+        except Exception:
+            return None
+
+    def _try_repair_json(self, text: str) -> dict[str, Any] | None:
+        candidate = text.strip()
+        if not candidate:
+            return None
+        if not candidate.startswith("{"):
+            first = candidate.find("{")
+            if first >= 0:
+                candidate = candidate[first:]
+        if not candidate.endswith("}"):
+            last = candidate.rfind("}")
+            if last >= 0:
+                candidate = candidate[: last + 1]
+        if candidate.count("{") > candidate.count("}"):
+            candidate += "}" * (candidate.count("{") - candidate.count("}"))
+        candidate = re.sub(r",\s*([}\]])", r"\1", candidate)
+        try:
+            parsed = json.loads(candidate)
+            return parsed if isinstance(parsed, dict) else None
+        except Exception:
+            return None
+
+    def _normalize_mindmap(self, payload: dict[str, Any], topic: str, max_branches: int) -> dict[str, Any]:
+        branches = payload.get("branches", [])
+        if not isinstance(branches, list):
+            branches = []
+        normalized = []
+        for branch in branches[:max_branches]:
+            if isinstance(branch, dict):
+                title = sanitize_text(str(branch.get("title", "")))
+                if not title:
+                    continue
+                children = branch.get("children", [])
+                children = children if isinstance(children, list) else []
+                normalized.append({"title": title, "children": children})
+            elif isinstance(branch, str):
+                normalized.append({"title": sanitize_text(branch), "children": []})
+        return {
+            "topic": sanitize_text(str(payload.get("topic") or topic)),
+            "branches": normalized,
+        }
+
+    def _generate_mindmap_via_local_runtime(self, topic: str, context: str, max_branches: int) -> dict[str, Any] | None:
+        if not self.model_info.get("loaded"):
+            return None
+        grammar = r'''
+root ::= "{" ws "\"topic\"" ws ":" ws string ws "," ws "\"branches\"" ws ":" ws "[" ws branchlist ws "]" ws "}"
+branchlist ::= branch | branch ws "," ws branchlist
+branch ::= "{" ws "\"title\"" ws ":" ws string ws "," ws "\"children\"" ws ":" ws "[]" ws "}"
+string ::= "\"" chars "\""
+chars ::= "" | char chars
+char ::= [^"\\\n] | "\\" escape
+escape ::= ["\\/bfnrt] | "u" hex hex hex hex
+hex ::= [0-9a-fA-F]
+ws ::= [ \t\n\r]*
+'''
+        prompt = (
+            "You generate a mindmap JSON. "
+            "Return one JSON object with keys topic and branches only. "
+            "Each branch must be {\"title\": string, \"children\": []}. "
+            f"Use concise labels and keep branches around {max_branches}. "
+            f"Topic: {topic}\nContext: {context}"
+        )
+        request_body = {
+            "prompt": prompt,
+            "n_predict": 300,
+            "temperature": 0.0,
+            "top_p": 0.9,
+            "top_k": 40,
+            "repeat_penalty": 1.05,
+            "grammar": grammar,
+            "stop": ["\n\n", "```", "</json>"],
+        }
+        attempts = [
+            request_body,
+            {
+                **request_body,
+                "temperature": 0.0,
+                "top_p": 0.2,
+                "top_k": 20,
+                "n_predict": 220,
+            },
+        ]
+        for attempt in attempts:
+            req = urllib.request.Request(
+                f"{settings.AI_LOCAL_INFERENCE_URL.rstrip('/')}/completion",
+                data=json.dumps(attempt).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=settings.AI_LOCAL_INFERENCE_TIMEOUT) as response:
+                    payload = json.loads(response.read().decode("utf-8"))
+                content = str(payload.get("content", ""))
+                parsed = self._extract_json_object(content)
+                if parsed is None:
+                    parsed = self._try_repair_json(content)
+                if parsed is None:
+                    continue
+                normalized = self._normalize_mindmap(parsed, topic=topic, max_branches=max_branches)
+                if not normalized.get("branches"):
+                    continue
+                return {
+                    **normalized,
+                    "provider": "local",
+                    "model_loaded": self.model_info,
+                    "inference": "gguf_runtime",
+                }
+            except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError, ValueError):
+                continue
+        return None
+
+    def generate_mindmap(self, topic: str, context: str = "", max_branches: int = 6) -> dict[str, Any]:
+        runtime_result = self._generate_mindmap_via_local_runtime(topic=topic, context=context, max_branches=max_branches)
+        if runtime_result is not None:
+            return runtime_result
+        fallback = super().generate_mindmap(topic=topic, context=context, max_branches=max_branches)
+        fallback["inference"] = "fallback_mock"
+        return fallback
 
 
 def get_selected_model(capability: str) -> AIModelWeight | None:
@@ -585,7 +735,7 @@ def list_weight_files() -> list[dict[str, str]]:
     base_dir = settings.AI_WEIGHTS_DIR
     os.makedirs(base_dir, exist_ok=True)
     files: list[dict[str, str]] = []
-    allowed_ext = {".pt", ".pth", ".bin", ".onnx", ".safetensors", ".pkl", ".joblib"}
+    allowed_ext = {".pt", ".pth", ".bin", ".onnx", ".safetensors", ".pkl", ".joblib", ".gguf"}
     for root, _, filenames in os.walk(base_dir):
         for filename in filenames:
             _, ext = os.path.splitext(filename)

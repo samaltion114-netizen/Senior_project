@@ -1,6 +1,7 @@
 """Scheduling views."""
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import date
 
 from django.shortcuts import get_object_or_404
@@ -75,3 +76,31 @@ class ScheduleOptimizeView(APIView):
             )
             created.append(session)
         return Response({"sessions": SessionSerializer(created, many=True).data}, status=status.HTTP_201_CREATED)
+
+
+class ScheduleSessionsView(APIView):
+    """Return persisted sessions grouped by weekday for one objective."""
+
+    permission_classes = [permissions.IsAuthenticated, IsStudent]
+
+    def get(self, request, *args, **kwargs) -> Response:
+        objective_id = request.query_params.get("objective_id")
+        if not objective_id:
+            return Response({"detail": "objective_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+        objective = get_object_or_404(Objective, id=objective_id, student=request.user)
+        sessions = Session.objects.filter(student=request.user, task__objective=objective).select_related("task").order_by("scheduled_start")
+        grouped: dict[str, list[dict]] = defaultdict(list)
+        for session in sessions:
+            key = session.scheduled_start.strftime("%A").lower()
+            grouped[key].append(
+                {
+                    "task_id": session.task_id,
+                    "title": session.task.title,
+                    "session_id": f"sess_{session.id:03d}",
+                    "estimated_duration": session.duration_minutes,
+                    "status": session.status,
+                    "scheduled_start": session.scheduled_start,
+                    "scheduled_end": session.scheduled_end,
+                }
+            )
+        return Response({"objective_id": objective.id, "schedule": grouped})

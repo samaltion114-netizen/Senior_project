@@ -98,11 +98,41 @@ Put your weight files in:
 - mounted in Docker as `/app/ai_model_weights`
 
 Supported file extensions discovered by API:
-- `.pt`, `.pth`, `.bin`, `.onnx`, `.safetensors`, `.pkl`, `.joblib`
+- `.pt`, `.pth`, `.bin`, `.onnx`, `.safetensors`, `.pkl`, `.joblib`, `.gguf`
 
 Model management APIs:
 - `GET /api/ai/models/weights/` : list discovered files + active selections
 - `POST /api/ai/models/select/` : activate model per capability
+
+### GGUF Mindmap Runtime (llama.cpp)
+
+Mindmap generation supports local GGUF inference through a running `llama-server`.
+
+Required runtime env vars:
+- `AI_LOCAL_INFERENCE_URL` (default `http://127.0.0.1:8080`)
+- `AI_LOCAL_INFERENCE_TIMEOUT` (default `45`)
+
+Run llama-server (Windows example):
+```bash
+"C:\Users\ASUS\Desktop\llama.cpp\llama.cpp\build\bin\Release\llama-server.exe" -m "C:\Users\ASUS\Senior_project\Project_root\ai_model_weights\mindmap-ai-q8.gguf" -c 4096 --host 127.0.0.1 --port 8080
+```
+
+Mindmap APIs:
+- `GET /api/ai/mindmap/svg/` : return integrated SVG file
+- `POST /api/ai/mindmap/generate/` : generate JSON mindmap from topic/context
+
+Mindmap generate body:
+```json
+{
+  "topic": "Academic Text Analysis",
+  "context": "boolean retrieval regex wildcard indices corpus JSON",
+  "max_branches": 6
+}
+```
+
+How to verify real GGUF inference:
+- response contains `"inference": "gguf_runtime"` and `"provider": "local"`
+- if runtime is unavailable/invalid output, backend safely returns `"inference": "fallback_mock"`
 
 Capabilities:
 - `all`

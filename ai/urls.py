@@ -5,8 +5,10 @@ from ai.views import (
     DailyChallengeGenerateView,
     InterviewMessageView,
     InterviewStartView,
+    MindmapGenerateView,
     ModelWeightListView,
     ModelWeightSelectView,
+    MindmapSvgView,
     TaggingChecklistView,
     TimeEstimateView,
 )
@@ -20,4 +22,6 @@ urlpatterns = [
     path("ai/time-estimate/", TimeEstimateView.as_view(), name="time-estimate"),
     path("ai/models/weights/", ModelWeightListView.as_view(), name="model-weights"),
     path("ai/models/select/", ModelWeightSelectView.as_view(), name="model-select"),
+    path("ai/mindmap/generate/", MindmapGenerateView.as_view(), name="ai-mindmap-generate"),
+    path("ai/mindmap/svg/", MindmapSvgView.as_view(), name="ai-mindmap-svg"),
 ]
