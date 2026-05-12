@@ -214,3 +214,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# AI model artifacts and weights
+ai_model_weights/*
+!ai_model_weights/.gitkeep
+*.gguf
+*.bin
+*.onnx
+*.pt
+*.pth
+*.ckpt
+*.safetensors
