@@ -323,3 +323,216 @@ To switch to S3:
 - inject API client
 - replace mock heuristics with LLM/Vision/OCR pipelines
 - keep same return contracts to avoid API/controller changes.
+
+## Backend Updates Summary (Recent Commits)
+
+Based on your recent backend commits (`e302367`, `5cbdf74`, `0e7aadd`, `744531b`), these areas were updated:
+- authentication hardening (email verification, password reset, FCM token update)
+- expert assignment workflow (request/accept/reject/list)
+- chat threads/messages tied to assignments
+- notifications and leaderboard/badges
+- payments intent/webhook/list
+- AI endpoints (interview, tagging, challenges, time estimate, model selection, mindmap generation)
+- API versioning under both `/api/` and `/api/v1/`
+
+## JSON Bodies (Swagger Quick Reference)
+
+All paths below work with `/api/...` and `/api/v1/...`.
+
+### Auth
+
+`POST /auth/register/`
+```json
+{
+  "username": "student1",
+  "email": "student1@example.com",
+  "password": "pass12345",
+  "role": "student",
+  "major": "IT",
+  "current_status": "beginner",
+  "goal_text": "become backend developer",
+  "timezone": "UTC"
+}
+```
+
+Expert registration example:
+```json
+{
+  "username": "expert1",
+  "email": "expert1@example.com",
+  "password": "pass12345",
+  "role": "expert",
+  "expertise_tags": ["python", "django"],
+  "bio": "Senior backend engineer",
+  "expertise_level": "senior",
+  "subscription_price": "15.00",
+  "max_students": 3,
+  "availability_schedule": {"monday": ["18:00-20:00"]}
+}
+```
+
+`POST /auth/token/`
+```json
+{
+  "email": "student1@example.com",
+  "password": "pass12345"
+}
+```
+
+`POST /auth/update-fcm-token/`
+```json
+{
+  "fcm_token": "your-fcm-token"
+}
+```
+
+`POST /auth/verify-email/request/`
+```json
+{
+  "email": "student1@example.com"
+}
+```
+
+`POST /auth/verify-email/confirm/`
+```json
+{
+  "token": "email-verification-token"
+}
+```
+
+`POST /auth/password-reset/request/`
+```json
+{
+  "email": "student1@example.com"
+}
+```
+
+`POST /auth/password-reset/confirm/`
+```json
+{
+  "token": "password-reset-token",
+  "new_password": "newStrongPass123"
+}
+```
+
+### Assignments, Notifications, Chat
+
+`POST /assignments/request/`
+```json
+{
+  "expert_id": 2,
+  "request_message": "Need help with AI roadmap"
+}
+```
+
+`POST /trainer/assignments/{id}/accept/`
+```json
+{
+  "reason": "Optional note"
+}
+```
+
+`POST /trainer/assignments/{id}/reject/`
+```json
+{
+  "reason": "Not available this week"
+}
+```
+
+`POST /chat/threads/{id}/messages/`
+```json
+{
+  "body": "Can we schedule a session tomorrow?"
+}
+```
+
+Notifications:
+- `GET /notifications/` returns items like:
+```json
+{
+  "id": 10,
+  "type": "assignment_request",
+  "title": "New Assignment Request",
+  "message": "Student requested mentorship",
+  "related_id": 44,
+  "metadata": {},
+  "is_read": false,
+  "created_at": "2026-05-12T20:00:00Z"
+}
+```
+
+### Payments
+
+`POST /payments/intent/`
+```json
+{
+  "amount": 1500,
+  "currency": "usd",
+  "expert_id": 2,
+  "assignment_id": 44
+}
+```
+
+`POST /payments/webhook/`
+```json
+{
+  "payment_intent_id": "pi_123456",
+  "status": "succeeded",
+  "metadata": {}
+}
+```
+
+### AI Endpoints
+
+`POST /interview/message/`
+```json
+{
+  "conversation_id": 1,
+  "message": "I want to improve in machine learning."
+}
+```
+
+`POST /ai/tagging/informatics/` or `/ai/tagging/legal/`
+```json
+{
+  "text": "Explain hash tables and collision handling."
+}
+```
+
+`POST /ai/challenges/generate/`
+```json
+{
+  "domain": "informatics",
+  "level": "intermediate",
+  "minutes": 20
+}
+```
+
+`POST /ai/time-estimate/`
+```json
+{
+  "title": "Build login API",
+  "description": "Django + JWT login flow",
+  "metadata": {"difficulty": "medium"}
+}
+```
+
+`POST /ai/models/select/`
+```json
+{
+  "capability": "interview",
+  "provider": "local",
+  "model_name": "my_interview_model",
+  "weight_path": "/app/ai_model_weights/interview_v1.onnx",
+  "metadata": {"framework": "onnx"}
+}
+```
+
+`POST /ai/mindmap/generate/`
+```json
+{
+  "topic": "Academic Text Analysis",
+  "context": "boolean retrieval regex wildcard indices corpus JSON",
+  "max_branches": 6
+}
+```
