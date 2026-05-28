@@ -12,15 +12,22 @@ from ai.views import (
     ModelWeightSelectView,
     MindmapSvgView,
     TaggingChecklistView,
+    VoiceMessageView,
     TimeEstimateView,
 )
 
 urlpatterns = [
     path("interview/start/", InterviewStartView.as_view(), name="interview-start"),
     path("interview/message/", InterviewMessageView.as_view(), name="interview-message"),
+    path("voice/", VoiceMessageView.as_view(), name="voice"),
+    path("voice/start/", InterviewStartView.as_view(), name="voice-start"),
+    path("voice/message/", VoiceMessageView.as_view(), name="voice-message"),
     path("ai/goals/generate/", GoalGenerationView.as_view(), name="goal-generation"),
     path("ai/tagging/informatics/", TaggingChecklistView.as_view(), {"domain": "informatics"}, name="tagging-it"),
     path("ai/tagging/legal/", TaggingChecklistView.as_view(), {"domain": "law"}, name="tagging-law"),
+    path("ai/voice/", VoiceMessageView.as_view(), name="ai-voice"),
+    path("ai/voice/start/", InterviewStartView.as_view(), name="ai-voice-start"),
+    path("ai/voice/message/", VoiceMessageView.as_view(), name="ai-voice-message"),
     path("ai/challenges/generate/", DailyChallengeGenerateView.as_view(), name="daily-challenges-generate"),
     path("ai/time-estimate/", TimeEstimateView.as_view(), name="time-estimate"),
     path("ai/models/weights/", ModelWeightListView.as_view(), name="model-weights"),

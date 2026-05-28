@@ -44,6 +44,54 @@ def test_tagging_endpoints(client: APIClient) -> None:
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("start_url", "message_url", "username"),
+    [
+        ("/api/voice/start/", "/api/voice/message/", "voice_root"),
+        ("/api/ai/voice/start/", "/api/ai/voice/message/", "voice_ai"),
+    ],
+)
+def test_voice_mock_endpoints(client: APIClient, start_url: str, message_url: str, username: str) -> None:
+    token = _register_and_auth(client, username)
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    start = client.post(start_url, {}, format="json")
+    assert start.status_code == 201
+    conversation_id = start.json()["conversation_id"]
+
+    resp = client.post(
+        message_url,
+        {"conversation_id": conversation_id, "transcript": "I want training in AI backend for internship"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["conversation_id"] == conversation_id
+    assert body["reply"]
+    assert body["recommended_objective"] is not None
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("endpoint", "username"),
+    [
+        ("/api/voice/", "voice_one_shot_root"),
+        ("/api/ai/voice/", "voice_one_shot_ai"),
+    ],
+)
+def test_voice_one_shot_aliases(client: APIClient, endpoint: str, username: str) -> None:
+    token = _register_and_auth(client, username)
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    resp = client.post(endpoint, {"transcript": "I want training in AI backend for internship"}, format="json")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["conversation_id"]
+    assert body["reply"]
+    assert body["recommended_objective"] is not None
+
+
+@pytest.mark.django_db
 def test_time_estimate_endpoint(client: APIClient) -> None:
     token = _register_and_auth(client, "s_est")
     client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")

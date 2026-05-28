@@ -72,6 +72,12 @@ No secrets are committed.
 - `POST /api/interview/start/`
 - `POST /api/interview/message/`
 
+### 1b) Voice Interview Mock
+- `POST /api/voice/start/`
+- `POST /api/voice/message/`
+- aliases also available under `/api/voice/` and `/api/ai/voice/...`
+- accepts a transcript instead of raw audio and reuses the same deterministic interview mock
+
 ### 2) Smart Time Estimation + Scheduling
 - `POST /api/ai/time-estimate/`
 - `POST /api/objectives/{id}/tasks/` (auto estimation)

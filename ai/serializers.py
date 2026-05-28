@@ -13,6 +13,21 @@ class InterviewMessageSerializer(serializers.Serializer):
     message = serializers.CharField(max_length=2000)
 
 
+class VoiceMessageSerializer(serializers.Serializer):
+    conversation_id = serializers.IntegerField(required=False)
+    message = serializers.CharField(max_length=2000, required=False, allow_blank=True)
+    transcript = serializers.CharField(max_length=2000, required=False, allow_blank=True)
+    language = serializers.CharField(max_length=16, required=False, default="en")
+
+    def validate(self, attrs):
+        message = (attrs.get("message") or attrs.get("transcript") or "").strip()
+        if not message:
+            raise serializers.ValidationError("Either 'message' or 'transcript' is required.")
+        attrs["message"] = message
+        attrs["transcript"] = message
+        return attrs
+
+
 class TaggingChecklistSerializer(serializers.Serializer):
     text = serializers.CharField(max_length=6000)
     domain = serializers.ChoiceField(choices=["informatics", "law"], required=False)

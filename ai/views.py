@@ -22,12 +22,42 @@ from ai.serializers import (
     InterviewMessageSerializer,
     MindmapGenerateRequestSerializer,
     ModelWeightSelectSerializer,
+    VoiceMessageSerializer,
     TaggingChecklistSerializer,
     TimeEstimateRequestSerializer,
 )
 from ai.services import get_ai_service, hash_text, list_weight_files, sanitize_text
 from ai.throttles import InterviewThrottle
 from proofs.models import Challenge
+
+
+def _process_interview_turn(*, user, conversation: InterviewConversation, message: str, event_type: str) -> dict[str, object]:
+    """Run one interview turn and persist the assistant reply."""
+    InterviewMessage.objects.create(conversation=conversation, role="user", content=message)
+    history = [{"role": m.role, "content": m.content} for m in conversation.messages.all()]
+    service = get_ai_service(capability=AIModelWeight.CAPABILITY_INTERVIEW)
+    result = service.process_message(history=history, message=message)
+    InterviewMessage.objects.create(conversation=conversation, role="assistant", content=result["reply"])
+    conversation.facts = {**conversation.facts, **result.get("facts", {})}
+    if result.get("suggested_objective"):
+        conversation.suggested_objective = result["suggested_objective"]
+        conversation.status = "completed"
+    conversation.save(update_fields=["facts", "suggested_objective", "status", "updated_at"])
+
+    AIEventLog.objects.create(
+        user=user,
+        event_type=event_type,
+        prompt=message,
+        response=result["reply"],
+        prompt_hash=hash_text(message),
+        response_hash=hash_text(result["reply"]),
+        embeddings_metadata={"conversation_id": conversation.id},
+    )
+    return {
+        "reply": result["reply"],
+        "completed": result["completed"],
+        "recommended_objective": result.get("suggested_objective"),
+    }
 
 
 class InterviewStartView(APIView):
@@ -53,35 +83,46 @@ class InterviewMessageView(APIView):
     def post(self, request, *args, **kwargs) -> Response:
         serializer = InterviewMessageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        conversation = InterviewConversation.objects.select_for_update().get(
-            id=serializer.validated_data["conversation_id"], student=request.user
-        )
+        conversation_id = serializer.validated_data.get("conversation_id")
+        if conversation_id is None:
+            return Response({"detail": "conversation_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+        conversation = InterviewConversation.objects.select_for_update().get(id=conversation_id, student=request.user)
         message = sanitize_text(serializer.validated_data["message"])
-        InterviewMessage.objects.create(conversation=conversation, role="user", content=message)
-        history = [{"role": m.role, "content": m.content} for m in conversation.messages.all()]
-        service = get_ai_service(capability=AIModelWeight.CAPABILITY_INTERVIEW)
-        result = service.process_message(history=history, message=message)
-        InterviewMessage.objects.create(conversation=conversation, role="assistant", content=result["reply"])
-        conversation.facts = {**conversation.facts, **result.get("facts", {})}
-        if result.get("suggested_objective"):
-            conversation.suggested_objective = result["suggested_objective"]
-            conversation.status = "completed"
-        conversation.save(update_fields=["facts", "suggested_objective", "status", "updated_at"])
-
-        AIEventLog.objects.create(
-            user=request.user,
-            event_type="interview_message",
-            prompt=message,
-            response=result["reply"],
-            prompt_hash=hash_text(message),
-            response_hash=hash_text(result["reply"]),
-            embeddings_metadata={"conversation_id": conversation.id},
-        )
+        result = _process_interview_turn(user=request.user, conversation=conversation, message=message, event_type="interview_message")
         return Response(
             {
                 "reply": result["reply"],
                 "completed": result["completed"],
-                "recommended_objective": result.get("suggested_objective"),
+                "recommended_objective": result.get("recommended_objective"),
+            }
+        )
+
+
+class VoiceMessageView(APIView):
+    """Send a voice transcript and reuse the interview mock flow."""
+
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [InterviewThrottle]
+
+    @transaction.atomic
+    @extend_schema(request=VoiceMessageSerializer, responses={200: dict})
+    def post(self, request, *args, **kwargs) -> Response:
+        serializer = VoiceMessageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        conversation_id = serializer.validated_data.get("conversation_id")
+        if conversation_id is None:
+            conversation = InterviewConversation.objects.create(student=request.user)
+        else:
+            conversation = InterviewConversation.objects.select_for_update().get(id=conversation_id, student=request.user)
+        message = sanitize_text(serializer.validated_data["message"])
+        result = _process_interview_turn(user=request.user, conversation=conversation, message=message, event_type="voice_message")
+        return Response(
+            {
+                "conversation_id": conversation.id,
+                "transcript": serializer.validated_data["transcript"],
+                "reply": result["reply"],
+                "completed": result["completed"],
+                "recommended_objective": result.get("recommended_objective"),
             }
         )
 
