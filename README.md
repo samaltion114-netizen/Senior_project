@@ -60,6 +60,7 @@ register -> interview -> objective -> tasks -> schedule -> complete session -> p
 - `CELERY_RESULT_BACKEND`
 - `AI_PROVIDER` (`mock` or `openai`)
 - `PROOF_CONFIDENCE_THRESHOLD`
+- `FIREBASE_CREDENTIALS_PATH` (optional, defaults to `firebase-credentials.json` in `Project_root`)
 
 No secrets are committed.
 
