@@ -59,6 +59,12 @@ class TaskSerializer(serializers.ModelSerializer):
         read_only_fields = ("objective", "estimated_minutes", "estimation_confidence")
 
 
+class CompletedTaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields = ("id", "title", "description", "status", "order", "xp_reward")
+
+
 class ObjectiveSerializer(serializers.ModelSerializer):
     tasks = TaskSerializer(many=True, read_only=True)
     has_unscheduled_tasks = serializers.SerializerMethodField()
@@ -68,8 +74,40 @@ class ObjectiveSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Objective
-        fields = ("id", "student", "title", "description", "suggested_by", "status", "created_at", "has_unscheduled_tasks", "tasks")
-        read_only_fields = ("student", "created_at")
+        fields = (
+            "id",
+            "student",
+            "title",
+            "description",
+            "suggested_by",
+            "status",
+            "linkedin_generated_text",
+            "created_at",
+            "has_unscheduled_tasks",
+            "tasks",
+        )
+        read_only_fields = ("student", "created_at", "linkedin_generated_text")
+
+
+class PortfolioGoalSerializer(serializers.ModelSerializer):
+    goal_title = serializers.CharField(source="title", read_only=True)
+    completed_tasks = serializers.SerializerMethodField()
+    all_tasks_completed = serializers.SerializerMethodField()
+
+    def get_completed_tasks(self, obj: Objective):
+        tasks = obj.tasks.filter(status=Task.STATUS_COMPLETED).order_by("order", "id")
+        return CompletedTaskSerializer(tasks, many=True).data
+
+    def get_all_tasks_completed(self, obj: Objective) -> bool:
+        total_tasks = obj.tasks.count()
+        if not total_tasks:
+            return False
+        return not obj.tasks.exclude(status=Task.STATUS_COMPLETED).exists()
+
+    class Meta:
+        model = Objective
+        fields = ("id", "goal_title", "linkedin_generated_text", "completed_tasks", "all_tasks_completed")
+        read_only_fields = fields
 
 
 class CreateTaskSerializer(serializers.ModelSerializer):

@@ -14,6 +14,7 @@ from core.views import (
     PortfolioAssetCreateView,
     PortfolioProjectDetailView,
     PortfolioProjectListCreateView,
+    PortfolioGoalView,
     TaskCompleteView,
     TaskCommentCreateView,
     TaskDetailView,
@@ -35,4 +36,5 @@ urlpatterns = [
     path("portfolio/projects/", PortfolioProjectListCreateView.as_view(), name="portfolio-projects"),
     path("portfolio/projects/<int:pk>/", PortfolioProjectDetailView.as_view(), name="portfolio-project-detail"),
     path("portfolio/projects/<int:id>/assets/", PortfolioAssetCreateView.as_view(), name="portfolio-project-assets"),
+    path("portfolio/goals/<int:id>/", PortfolioGoalView.as_view(), name="portfolio-goal"),
 ]

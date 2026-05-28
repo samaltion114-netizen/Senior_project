@@ -259,6 +259,91 @@ class MockAIService(InterviewAgent, ObjectiveScorer, TimeEstimator, ScheduleOpti
             "description": "Complete fundamentals in software, networks, and AI track selection.",
         }
 
+    def _goal_is_clear(self, objective_title: str) -> bool:
+        cleaned = sanitize_text(objective_title)
+        if len(cleaned) < 4:
+            return False
+        tokens = re.findall(r"[A-Za-z0-9]+", cleaned)
+        alpha_tokens = [token for token in tokens if re.search(r"[A-Za-z]", token)]
+        if not alpha_tokens:
+            return False
+        if len(alpha_tokens) == 1:
+            token = alpha_tokens[0]
+            if token.lower() in {"goal", "project", "portfolio", "plan", "roadmap"}:
+                return True
+            if len(token) < 4:
+                return False
+            return bool(re.search(r"[aeiou]", token.lower()) or token.isupper())
+        meaningful = [token for token in alpha_tokens if len(token) >= 4 and (re.search(r"[aeiou]", token.lower()) or token.isupper())]
+        return bool(meaningful)
+
+    def _goal_domain(self, objective_title: str) -> str:
+        text = sanitize_text(objective_title).lower()
+        if any(token in text for token in ["backend", "django", "api", "server", "database", "auth", "deployment"]):
+            return "backend"
+        if any(token in text for token in ["ai", "ml", "model", "classifier", "training", "data"]):
+            return "ai"
+        if any(token in text for token in ["law", "legal", "contract", "compliance", "draft"]):
+            return "legal"
+        if any(token in text for token in ["frontend", "ui", "design", "ux", "portfolio"]):
+            return "product"
+        return "general"
+
+    def _goal_task_labels(self, objective_title: str, count: int) -> list[str]:
+        subject = sanitize_text(objective_title)
+        domain = self._goal_domain(subject)
+        if domain == "backend":
+            templates = [
+                f"Map the architecture for {subject}",
+                f"Implement the core backend flow for {subject}",
+                f"Add validation and authentication for {subject}",
+                f"Write tests and fix edge cases for {subject}",
+                f"Prepare deployment notes and portfolio evidence for {subject}",
+                f"Refine observability and documentation for {subject}",
+                f"Review feedback and improve {subject}",
+            ]
+        elif domain == "ai":
+            templates = [
+                f"Define the dataset and success criteria for {subject}",
+                f"Build the model pipeline for {subject}",
+                f"Evaluate model quality for {subject}",
+                f"Tune the results and capture experiments for {subject}",
+                f"Document the final AI workflow for {subject}",
+                f"Prepare portfolio evidence for {subject}",
+                f"Review feedback and improve {subject}",
+            ]
+        elif domain == "legal":
+            templates = [
+                f"Review the source material for {subject}",
+                f"Draft the core analysis for {subject}",
+                f"Check compliance and risks for {subject}",
+                f"Refine recommendations for {subject}",
+                f"Prepare the final submission for {subject}",
+                f"Summarize the outcome of {subject}",
+                f"Review feedback and improve {subject}",
+            ]
+        elif domain == "product":
+            templates = [
+                f"Research the scope of {subject}",
+                f"Design the first deliverable for {subject}",
+                f"Build and test the portfolio output for {subject}",
+                f"Refine the presentation for {subject}",
+                f"Prepare the final portfolio entry for {subject}",
+                f"Review feedback and improve {subject}",
+                f"Summarize lessons learned from {subject}",
+            ]
+        else:
+            templates = [
+                f"Research the scope of {subject}",
+                f"Build the first deliverable for {subject}",
+                f"Test and refine {subject}",
+                f"Document the outcome of {subject}",
+                f"Prepare the final portfolio entry for {subject}",
+                f"Review feedback and improve {subject}",
+                f"Summarize lessons learned from {subject}",
+            ]
+        return templates[: max(1, min(count, 10))]
+
     def validate_or_generate_tasks(
         self,
         *,
@@ -324,17 +409,61 @@ class MockAIService(InterviewAgent, ObjectiveScorer, TimeEstimator, ScheduleOpti
                 or not task_lower.strip()
             )
             tasks = [infer_task(task_name, 1)] if is_valid else []
-            return {"is_valid": is_valid, "tasks": tasks}
+            return {
+                "status": "valid" if is_valid else "invalid",
+                "is_valid": is_valid,
+                "message": None if is_valid else "Task is not relevant to the selected objective.",
+                "tasks": tasks,
+            }
 
-        seed = [
-            f"Study fundamentals for {objective_title}",
-            f"Build first practical deliverable for {objective_title}",
-            f"Test and debug core workflow for {objective_title}",
-            f"Document and refine {objective_title}",
-            f"Publish final portfolio artifact for {objective_title}",
-        ]
-        generated = [infer_task(name, idx) for idx, name in enumerate(seed[:count], start=1)]
-        return {"is_valid": True, "tasks": generated}
+        if not self._goal_is_clear(objective_title):
+            return {
+                "status": "invalid",
+                "is_valid": False,
+                "message": "Goal is not clear enough. Please enter a specific learning or career goal.",
+                "tasks": [],
+            }
+
+        seed = self._goal_task_labels(objective_title, count)
+        generated = [infer_task(name, idx) for idx, name in enumerate(seed, start=1)]
+        return {"status": "valid", "is_valid": True, "message": None, "tasks": generated}
+
+    def generate_linkedin_post(
+        self,
+        *,
+        objective_title: str,
+        completed_tasks: list[str],
+        student_name: str = "",
+    ) -> dict[str, Any]:
+        """Build a LinkedIn-ready portfolio post from a completed objective."""
+        title = sanitize_text(objective_title)
+        tasks = [sanitize_text(task) for task in completed_tasks if sanitize_text(task)]
+        domain = self._goal_domain(title)
+        subject = f"{title}" if title else "my goal"
+        intro = f"I am proud to share that I completed '{subject}'."
+        if student_name:
+            intro = f"{sanitize_text(student_name)} has completed '{subject}'."
+        if tasks:
+            highlights = ", ".join(tasks[:5])
+            body = f"Key milestones included: {highlights}."
+        else:
+            body = "The journey focused on steady progress, execution, and learning."
+        closing = "Grateful for the support and ready for the next challenge."
+        hashtags_map = {
+            "backend": ["#BackendDevelopment", "#Django", "#APIs", "#Portfolio"],
+            "ai": ["#ArtificialIntelligence", "#MachineLearning", "#Portfolio", "#Learning"],
+            "legal": ["#LegalTech", "#ProfessionalGrowth", "#Portfolio", "#Learning"],
+            "product": ["#ProductDesign", "#Portfolio", "#Learning", "#CareerGrowth"],
+            "general": ["#Portfolio", "#LearningJourney", "#CareerGrowth", "#LinkedIn"],
+        }
+        hashtags = hashtags_map.get(domain, hashtags_map["general"])
+        text = " ".join([intro, body, closing, " ".join(hashtags)]).strip()
+        return {
+            "linkedin_generated_text": text,
+            "hashtags": hashtags,
+            "domain": domain,
+            "source": "mock",
+        }
 
     def process_message(self, history: list[dict[str, str]], message: str) -> dict[str, Any]:
         normalized = sanitize_text(message)

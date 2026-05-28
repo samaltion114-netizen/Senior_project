@@ -159,6 +159,10 @@ venv.bak/
 firebase-credentials.json
 firebase-credentials.json.json
 
+# Runtime uploads and generated media
+media/proofs/**
+media/portfolio/**
+
 # Spyder project settings
 .spyderproject
 .spyproject

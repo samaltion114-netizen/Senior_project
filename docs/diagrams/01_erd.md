@@ -35,6 +35,7 @@ erDiagram
       text description
       string suggested_by
       string status
+      text linkedin_generated_text
       datetime created_at
     }
 

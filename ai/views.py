@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 from ai.models import AIEventLog, AIModelWeight, InterviewConversation, InterviewMessage
 from ai.serializers import (
     DailyChallengeRequestSerializer,
+    GoalGenerationRequestSerializer,
     InterviewMessageSerializer,
     MindmapGenerateRequestSerializer,
     ModelWeightSelectSerializer,
@@ -83,6 +84,28 @@ class InterviewMessageView(APIView):
                 "recommended_objective": result.get("suggested_objective"),
             }
         )
+
+
+class GoalGenerationView(APIView):
+    """Validate a goal and generate a JSON task plan."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(request=GoalGenerationRequestSerializer, responses={200: dict, 400: dict})
+    def post(self, request, *args, **kwargs) -> Response:
+        serializer = GoalGenerationRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        service = get_ai_service(capability=AIModelWeight.CAPABILITY_ALL)
+        result = service.validate_or_generate_tasks(
+            objective_title=data["goal"],
+            task_name="",
+            user_level=data["user_level"],
+            count=data["count"],
+        )
+        if result.get("status") == "invalid":
+            return Response({"status": "invalid", "detail": result.get("message")}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "valid", "tasks": result["tasks"]})
 
 
 class ExpertSystemProxyView(APIView):

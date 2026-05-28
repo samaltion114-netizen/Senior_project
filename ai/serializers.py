@@ -35,6 +35,12 @@ class TaskGenerationRequestSerializer(serializers.Serializer):
     count = serializers.IntegerField(min_value=1, max_value=10, default=5)
 
 
+class GoalGenerationRequestSerializer(serializers.Serializer):
+    goal = serializers.CharField(max_length=255)
+    user_level = serializers.ChoiceField(choices=["beginner", "intermediate", "advanced"], required=False, default="intermediate")
+    count = serializers.IntegerField(min_value=1, max_value=10, default=5)
+
+
 class MindmapGenerateRequestSerializer(serializers.Serializer):
     topic = serializers.CharField(min_length=3, max_length=255)
     context = serializers.CharField(required=False, allow_blank=True, default="", max_length=4000)

@@ -9,6 +9,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from accounts.models import EmailVerificationToken, PasswordResetToken
+from core.models import Objective
 from ai.tasks import send_reminder_notifications_task
 from scheduling.models import Session
 
@@ -167,6 +168,90 @@ def test_dashboard_decompose_performance_and_portfolio(client: APIClient) -> Non
     assert len(lst.json()) >= 1
     detail = client.patch(f"/api/portfolio/projects/{project_id}/", {"description": "Updated"}, format="json")
     assert detail.status_code == 200
+
+
+@pytest.mark.django_db
+def test_goal_validation_and_portfolio_linkedin_flow(client: APIClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    token = _register_and_auth(client, "portfolio_goal_student")
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    invalid = client.post(
+        "/api/ai/goals/generate/",
+        {"goal": "xqz", "user_level": "beginner", "count": 3},
+        format="json",
+    )
+    assert invalid.status_code == 400
+    assert "detail" in invalid.json()
+
+    preview = client.post(
+        "/api/ai/goals/generate/",
+        {"goal": "Backend AI Portfolio", "user_level": "beginner", "count": 3},
+        format="json",
+    )
+    assert preview.status_code == 200
+    assert preview.json()["status"] == "valid"
+    assert len(preview.json()["tasks"]) == 3
+    assert any("Backend AI Portfolio" in task["task_name"] for task in preview.json()["tasks"])
+
+    objective = client.post(
+        "/api/objectives/",
+        {"title": "Backend AI Portfolio", "description": "desc", "suggested_by": "ai", "status": "active"},
+        format="json",
+    )
+    assert objective.status_code == 201
+    objective_id = objective.json()["id"]
+
+    task1 = client.post(
+        f"/api/objectives/{objective_id}/tasks/",
+        {"title": "Build backend API", "description": "Create endpoints", "order": 1, "metadata": {"complexity": 2}},
+        format="json",
+    )
+    task2 = client.post(
+        f"/api/objectives/{objective_id}/tasks/",
+        {"title": "Write deployment notes", "description": "Document release", "order": 2, "metadata": {"complexity": 1}},
+        format="json",
+    )
+    assert task1.status_code == 201 and task2.status_code == 201
+    client.post(f"/api/tasks/{task1.json()['id']}/complete/", {}, format="json")
+    client.post(f"/api/tasks/{task2.json()['id']}/complete/", {}, format="json")
+
+    generated = client.post(f"/api/portfolio/goals/{objective_id}/", {}, format="json")
+    assert generated.status_code == 200
+    body = generated.json()
+    assert body["goal_title"] == "Backend AI Portfolio"
+    assert body["all_tasks_completed"] is True
+    assert len(body["completed_tasks"]) == 2
+    assert body["linkedin_generated_text"]
+    assert Objective.objects.get(id=objective_id).linkedin_generated_text == body["linkedin_generated_text"]
+
+    cached = client.post(f"/api/portfolio/goals/{objective_id}/", {}, format="json")
+    assert cached.status_code == 200
+    assert cached.json()["linkedin_generated_text"] == body["linkedin_generated_text"]
+
+    fallback_objective = client.post(
+        "/api/objectives/",
+        {"title": "Legal Career Portfolio", "description": "desc", "suggested_by": "ai", "status": "active"},
+        format="json",
+    )
+    assert fallback_objective.status_code == 201
+    fallback_objective_id = fallback_objective.json()["id"]
+    fallback_task = client.post(
+        f"/api/objectives/{fallback_objective_id}/tasks/",
+        {"title": "Review contract clauses", "description": "Read and summarize", "order": 1, "metadata": {"complexity": 1}},
+        format="json",
+    )
+    assert fallback_task.status_code == 201
+    client.post(f"/api/tasks/{fallback_task.json()['id']}/complete/", {}, format="json")
+
+    class BrokenService:
+        def generate_linkedin_post(self, **_kwargs):
+            raise TimeoutError("timeout")
+
+    monkeypatch.setattr("core.views.get_ai_service", lambda capability=None: BrokenService())
+    fallback = client.post(f"/api/portfolio/goals/{fallback_objective_id}/", {}, format="json")
+    assert fallback.status_code == 200
+    assert fallback.json()["linkedin_generated_text"]
+    assert Objective.objects.get(id=fallback_objective_id).linkedin_generated_text == fallback.json()["linkedin_generated_text"]
 
 
 @pytest.mark.django_db

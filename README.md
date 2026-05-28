@@ -77,6 +77,10 @@ No secrets are committed.
 - `POST /api/objectives/{id}/tasks/` (auto estimation)
 - `POST /api/schedule/optimize/`
 
+### 2b) AI Goal Validation + Portfolio Post Generation
+- `POST /api/ai/goals/generate/`
+- `GET/POST /api/portfolio/goals/{id}/`
+
 Time-estimation dataset used by the backend:
 - `ai/data/Informatics_task_times_synthetic.csv`
 - configured through `AI_TASK_TIME_DATASET`
@@ -172,6 +176,7 @@ curl -X POST http://localhost/api/ai/models/select/ \
 - `GET/PATCH/DELETE /api/tasks/{id}/`
 - `POST /api/tasks/{id}/complete/`
 - `POST /api/tasks/{id}/comments/`
+- `GET/POST /api/portfolio/goals/{id}/`
 - `POST /api/schedule/optimize/`
 - `POST /api/sessions/{id}/complete/`
 - `GET /api/proofs/{id}/analysis/`

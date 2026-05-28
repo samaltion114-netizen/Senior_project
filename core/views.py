@@ -17,8 +17,9 @@ from rest_framework.views import APIView
 from accounts.permissions import IsStudent
 from accounts.models import ExpertAssignment, Notification
 from accounts.services import award_badge_if_eligible, create_notification, log_user_activity
+from ai.models import AIEventLog
 from ai.models import AIModelWeight
-from ai.services import get_ai_service, text_to_embedding
+from ai.services import get_ai_service, hash_text, text_to_embedding
 from core.models import Objective, ObjectiveMilestone, PerformanceMetric, PortfolioProject, ProgressSnapshot, Task
 from core.serializers import (
     CreateTaskSerializer,
@@ -26,6 +27,7 @@ from core.serializers import (
     ObjectiveMilestoneSerializer,
     ObjectiveSerializer,
     PerformanceMetricSerializer,
+    PortfolioGoalSerializer,
     PortfolioAssetSerializer,
     PortfolioAssetUploadSerializer,
     PortfolioProjectSerializer,
@@ -47,6 +49,24 @@ def _user_level_for_request(request) -> str:
     if any(token in lowered for token in ["advanced", "expert", "senior"]):
         return "advanced"
     return "intermediate"
+
+
+def _portfolio_fallback_linkedin_text(objective: Objective, completed_tasks: list[Task]) -> str:
+    subject = objective.title.strip() or "my goal"
+    task_titles = [task.title.strip() for task in completed_tasks if task.title.strip()]
+    if task_titles:
+        highlights = ", ".join(task_titles[:5])
+        return (
+            f"I am proud to share that I completed '{subject}'. "
+            f"Key milestones included {highlights}. "
+            "Grateful for the progress and ready for the next challenge. "
+            "#Portfolio #LearningJourney #CareerGrowth"
+        )
+    return (
+        f"I am proud to share that I completed '{subject}' through our platform. "
+        "Grateful for the progress and ready for the next challenge. "
+        "#Portfolio #LearningJourney #CareerGrowth"
+    )
 
 
 class ObjectiveListCreateView(generics.ListCreateAPIView):
@@ -88,8 +108,8 @@ class ObjectiveTaskCreateView(APIView):
             task_name=serializer.validated_data["title"],
             user_level=_user_level_for_request(request),
         )
-        if not task_ai.get("is_valid", False):
-            return Response({"detail": "Task is not relevant to the selected objective."}, status=status.HTTP_400_BAD_REQUEST)
+        if task_ai.get("status") == "invalid" or not task_ai.get("is_valid", False):
+            return Response({"detail": task_ai.get("message") or "Task is not relevant to the selected objective."}, status=status.HTTP_400_BAD_REQUEST)
         ai_task = task_ai["tasks"][0]
         estimate_payload = {
             **serializer.validated_data,
@@ -136,6 +156,8 @@ class ObjectiveGenerateTasksView(APIView):
             user_level=serializer.validated_data["user_level"],
             count=serializer.validated_data["count"],
         )
+        if generated.get("status") == "invalid" or not generated.get("is_valid", False):
+            return Response({"detail": generated.get("message") or "Goal is not clear enough."}, status=status.HTTP_400_BAD_REQUEST)
         created = []
         next_order = objective.tasks.count() + 1
         for offset, row in enumerate(generated["tasks"], start=0):
@@ -432,3 +454,69 @@ class PortfolioAssetCreateView(APIView):
             caption=serializer.validated_data.get("caption", ""),
         )
         return Response(PortfolioAssetSerializer(asset).data, status=status.HTTP_201_CREATED)
+
+
+class PortfolioGoalView(APIView):
+    """Read and publish a portfolio-ready summary for one objective."""
+
+    permission_classes = [permissions.IsAuthenticated, IsStudent]
+
+    def get(self, request, id: int, *args, **kwargs) -> Response:
+        objective = get_object_or_404(Objective.objects.prefetch_related("tasks"), id=id, student=request.user)
+        return Response(PortfolioGoalSerializer(objective).data)
+
+    @transaction.atomic
+    def post(self, request, id: int, *args, **kwargs) -> Response:
+        objective = get_object_or_404(Objective.objects.select_for_update().prefetch_related("tasks"), id=id, student=request.user)
+        if objective.linkedin_generated_text:
+            return Response(PortfolioGoalSerializer(objective).data)
+
+        completed_tasks = list(objective.tasks.filter(status=Task.STATUS_COMPLETED).order_by("order", "id"))
+        if not objective.tasks.exists() or objective.tasks.exclude(status=Task.STATUS_COMPLETED).exists():
+            return Response(
+                {"detail": "All tasks must be completed before adding this goal to the portfolio."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        task_titles = [task.title for task in completed_tasks]
+        prompt = (
+            f"Write a professional LinkedIn post in English for the goal '{objective.title}'. "
+            f"The student completed these tasks: {', '.join(task_titles)}."
+        )
+        linkedin_text = ""
+        source = "ai"
+        try:
+            service = get_ai_service(capability=AIModelWeight.CAPABILITY_ALL)
+            result = service.generate_linkedin_post(
+                objective_title=objective.title,
+                completed_tasks=task_titles,
+            )
+            if isinstance(result, dict):
+                linkedin_text = str(result.get("linkedin_generated_text", "")).strip()
+                source = str(result.get("source", "ai"))
+            else:
+                linkedin_text = str(result).strip()
+        except Exception:
+            linkedin_text = ""
+            source = "fallback"
+
+        if not linkedin_text:
+            linkedin_text = _portfolio_fallback_linkedin_text(objective, completed_tasks)
+            source = "fallback"
+
+        objective.linkedin_generated_text = linkedin_text
+        objective.save(update_fields=["linkedin_generated_text"])
+        AIEventLog.objects.create(
+            user=request.user,
+            event_type="portfolio_linkedin_generate",
+            prompt=prompt,
+            response=linkedin_text,
+            prompt_hash=hash_text(prompt),
+            response_hash=hash_text(linkedin_text),
+            embeddings_metadata={
+                "objective_id": objective.id,
+                "task_ids": [task.id for task in completed_tasks],
+                "source": source,
+            },
+        )
+        return Response(PortfolioGoalSerializer(objective).data, status=status.HTTP_200_OK)

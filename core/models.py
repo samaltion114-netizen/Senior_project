@@ -31,6 +31,7 @@ class Objective(models.Model):
     description = models.TextField()
     suggested_by = models.CharField(max_length=20, choices=SUGGESTED_BY_CHOICES, default=SUGGESTED_BY_AI)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    linkedin_generated_text = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
