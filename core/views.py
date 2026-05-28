@@ -280,7 +280,7 @@ class DashboardProgressView(APIView):
         latest_metric = PerformanceMetric.objects.filter(student=student).first()
         skill_score = round((latest_metric.speed_score if latest_metric else progress) or 0.0, 2)
         recommendations_count = Challenge.objects.filter(student=student, completed=False).count()
-        notifications_count = ProgrammingQuestion.objects.filter(proof__session__student=student).count()
+        notifications_count = ProgrammingQuestion.objects.filter(proof__task__objective__student=student).count()
 
         snapshot, _ = ProgressSnapshot.objects.update_or_create(
             student=student,
@@ -314,7 +314,7 @@ class PerformanceSummaryView(APIView):
         success_rate = round((completed / total) * 100.0, 2) if total else 0.0
         failure_rate = round(max(100.0 - success_rate, 0.0), 2)
         repeated = (
-            ProgrammingQuestion.objects.filter(proof__session__student=student)
+            ProgrammingQuestion.objects.filter(proof__task__objective__student=student)
             .values("title")
             .annotate(c=Count("id"))
             .filter(c__gt=1)

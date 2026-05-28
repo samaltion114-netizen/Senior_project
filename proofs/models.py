@@ -6,18 +6,20 @@ from django.db import models
 
 
 def proof_image_path(instance: "Proof", filename: str) -> str:
-    return f"proofs/{instance.session.student_id}/{filename}"
+    task_id = getattr(instance, "task_id", None)
+    student_id = instance.task.objective.student_id if task_id else "unknown"
+    return f"proofs/{student_id}/task_{task_id or 'unknown'}/{filename}"
 
 
 class Proof(models.Model):
-    """Evidence submitted by student after session completion."""
+    """Evidence submitted by student after task progress/completion."""
 
     STATUS_PENDING = "pending"
     STATUS_DONE = "done"
     STATUS_FAILED = "failed"
     STATUS_CHOICES = [(STATUS_PENDING, "Pending"), (STATUS_DONE, "Done"), (STATUS_FAILED, "Failed")]
 
-    session = models.OneToOneField("scheduling.Session", on_delete=models.CASCADE, related_name="proof")
+    task = models.ForeignKey("core.Task", on_delete=models.CASCADE, related_name="proofs")
     image = models.ImageField(upload_to=proof_image_path)
     explanation_text = models.TextField()
     ai_analysis = models.JSONField(default=dict, blank=True)
@@ -25,7 +27,7 @@ class Proof(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
-        return f"Proof<{self.session_id}>"
+        return f"Proof<{self.task_id}>"
 
 
 class ProgrammingQuestion(models.Model):

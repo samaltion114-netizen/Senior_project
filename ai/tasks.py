@@ -35,10 +35,10 @@ def generate_daily_challenges_task() -> dict:
     created = 0
     today = timezone.localdate()
     for student_id in (
-        Proof.objects.filter(session__student__is_student=True).values_list("session__student_id", flat=True).distinct()
+        Proof.objects.filter(task__objective__student__is_student=True).values_list("task__objective__student_id", flat=True).distinct()
     ):
         open_issues = list(
-            ProgrammingQuestion.objects.filter(proof__session__student_id=student_id).values_list("title", flat=True)[:3]
+            ProgrammingQuestion.objects.filter(proof__task__objective__student_id=student_id).values_list("title", flat=True)[:3]
         )
         generated = service.generate({"open_issues": open_issues})
         for row in generated[:3]:

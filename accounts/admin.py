@@ -9,6 +9,7 @@ from accounts.models import (
     EmailVerificationToken,
     ExpertAssignment,
     ExpertProfile,
+    ExpertRating,
     Notification,
     PasswordResetToken,
     PaymentRecord,
@@ -34,7 +35,13 @@ class StudentProfileAdmin(admin.ModelAdmin):
 
 @admin.register(ExpertProfile)
 class ExpertProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "expertise_tags")
+    list_display = ("user", "expertise_level", "average_rating", "is_accepting_new_students")
+
+
+@admin.register(ExpertRating)
+class ExpertRatingAdmin(admin.ModelAdmin):
+    list_display = ("student", "expert", "rating", "created_at")
+    list_filter = ("rating",)
 
 
 @admin.register(EmailVerificationToken)

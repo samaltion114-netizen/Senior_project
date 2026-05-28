@@ -65,7 +65,7 @@ erDiagram
 
     PROOF {
       bigint id PK
-      bigint session_id FK
+      bigint task_id FK
       string image
       text explanation_text
       json ai_analysis
@@ -246,7 +246,7 @@ erDiagram
     OBJECTIVE ||--o{ TASK : contains
     USER ||--o{ SESSION : attends
     TASK ||--o{ SESSION : scheduled_as
-    SESSION ||--|| PROOF : has_one
+    TASK ||--o{ PROOF : has_many
     PROOF ||--o{ PROGRAMMING_QUESTION : generates
     PROGRAMMING_QUESTION ||--o{ TODO_ITEM : contains
     USER ||--o{ CHALLENGE : receives

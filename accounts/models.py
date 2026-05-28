@@ -5,6 +5,7 @@ import secrets
 from datetime import timedelta
 
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -62,6 +63,24 @@ class ExpertProfile(models.Model):
 
     def __str__(self) -> str:
         return f"ExpertProfile<{self.user.username}>"
+
+
+class ExpertRating(models.Model):
+    """Student rating for an expert with one rating per student/expert pair."""
+
+    student = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="given_expert_ratings")
+    expert = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="received_expert_ratings")
+    rating = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    feedback = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("student", "expert")
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"ExpertRating<{self.student_id}->{self.expert_id}:{self.rating}>"
 
 
 class UserActivityLog(models.Model):

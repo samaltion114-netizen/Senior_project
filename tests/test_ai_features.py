@@ -202,15 +202,24 @@ def test_generated_tasks_assignments_notifications_and_payments(client: APIClien
     expert_client.credentials(HTTP_AUTHORIZATION=f"Bearer {expert_token}")
     accept = expert_client.post(f"/api/trainer/assignments/{assignment_id}/accept/", {}, format="json")
     assert accept.status_code == 200
-    assert accept.json()["status"] == "active"
+    assert accept.json()["status"] == "awaiting_payment"
 
     notifications = client.get("/api/notifications/")
     assert notifications.status_code == 200
     assert any(item["type"] == "assignment_accepted" for item in notifications.json())
 
-    payment = client.post("/api/payments/intent/", {"amount": 5000, "currency": "usd"}, format="json")
+    payment = client.post("/api/payments/intent/", {"assignment_id": assignment_id, "currency": "usd"}, format="json")
     assert payment.status_code == 200
     assert "client_secret" in payment.json()
+    payment_intent_id = payment.json()["payment_intent_id"]
+
+    webhook = client.post(
+        "/api/payments/webhook/",
+        {"payment_intent_id": payment_intent_id, "status": "succeeded", "metadata": {"source": "test"}},
+        format="json",
+    )
+    assert webhook.status_code == 200
+    assert webhook.json()["status"] == "succeeded"
 
     threads = client.get("/api/chat/threads/")
     assert threads.status_code == 200
@@ -227,14 +236,44 @@ def test_generated_tasks_assignments_notifications_and_payments(client: APIClien
 
     payments = client.get("/api/payments/")
     assert payments.status_code == 200
-    payment_intent_id = payments.json()[0]["payment_intent_id"]
-    webhook = client.post(
-        "/api/payments/webhook/",
-        {"payment_intent_id": payment_intent_id, "status": "succeeded", "metadata": {"source": "test"}},
+    assert payments.json()[0]["payment_intent_id"] == payment_intent_id
+
+
+@pytest.mark.django_db
+def test_expert_rating_and_profile_update(client: APIClient) -> None:
+    student_token = _register_and_auth(client, "rating_student")
+    expert_client = APIClient()
+    expert_token = _register_and_auth(expert_client, "rating_expert", role="expert")
+    expert = User.objects.get(username="rating_expert")
+
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {student_token}")
+    assign = client.post(
+        "/api/assignments/request/",
+        {"expert_id": expert.id, "request_message": "Need mentorship"},
         format="json",
     )
-    assert webhook.status_code == 200
-    assert webhook.json()["status"] == "succeeded"
+    assert assign.status_code == 201
+
+    expert_client.credentials(HTTP_AUTHORIZATION=f"Bearer {expert_token}")
+    accept = expert_client.post(f"/api/trainer/assignments/{assign.json()['id']}/accept/", {}, format="json")
+    assert accept.status_code == 200
+
+    rating = client.post(
+        f"/api/experts/{expert.id}/rate/",
+        {"rating": 5, "feedback": "Very helpful"},
+        format="json",
+    )
+    assert rating.status_code == 201
+    assert rating.json()["average_rating"] == 5.0
+
+    me = expert_client.get("/api/experts/me/")
+    assert me.status_code == 200
+    assert me.json()["average_rating"] == 5.0
+
+    patch = expert_client.patch("/api/experts/me/", {"bio": "Updated bio", "is_accepting_new_students": False}, format="json")
+    assert patch.status_code == 200
+    assert patch.json()["bio"] == "Updated bio"
+    assert patch.json()["is_accepting_new_students"] is False
 
 
 @pytest.mark.django_db

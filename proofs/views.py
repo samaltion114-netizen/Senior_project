@@ -24,14 +24,16 @@ class SessionCompleteView(APIView):
 
     @extend_schema(request=CompleteSessionSerializer, responses={201: ProofSerializer})
     def post(self, request, id: int, *args, **kwargs) -> Response:
-        session = get_object_or_404(Session, id=id, student=request.user)
+        session = get_object_or_404(Session.objects.select_related("task__objective"), id=id, student=request.user)
+        if session.status == Session.STATUS_COMPLETED:
+            return Response({"detail": "Session already completed."}, status=status.HTTP_409_CONFLICT)
         serializer = CompleteSessionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         session.status = Session.STATUS_COMPLETED
         session.save(update_fields=["status"])
         proof = Proof.objects.create(
-            session=session,
+            task=session.task,
             image=serializer.validated_data["image"],
             explanation_text=serializer.validated_data["explanation"],
         )
@@ -52,7 +54,7 @@ class ProofAnalysisView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, id: int, *args, **kwargs) -> Response:
-        proof = get_object_or_404(Proof, id=id, session__student=request.user)
+        proof = get_object_or_404(Proof, id=id, task__objective__student=request.user)
         return Response(ProofSerializer(proof).data)
 
 

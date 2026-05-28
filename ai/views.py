@@ -1,8 +1,11 @@
 """Views implementing AI feature APIs."""
 from __future__ import annotations
 
+import json
 from datetime import date
 from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from django.conf import settings
 from django.db import transaction
@@ -80,6 +83,39 @@ class InterviewMessageView(APIView):
                 "recommended_objective": result.get("suggested_objective"),
             }
         )
+
+
+class ExpertSystemProxyView(APIView):
+    """Proxy requests to the external expert-system service."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs) -> Response:
+        payload = request.data if isinstance(request.data, dict) else dict(request.data)
+        body = json.dumps(payload).encode("utf-8")
+        headers = {
+            "Content-Type": "application/json",
+            "X-User-ID": str(request.user.id),
+            "X-User-Name": request.user.username,
+            "X-User-Email": request.user.email,
+        }
+        proxy_request = Request(settings.AI_EXPERT_SYSTEM_URL, data=body, headers=headers, method="POST")
+        try:
+            with urlopen(proxy_request, timeout=settings.AI_LOCAL_INFERENCE_TIMEOUT) as response:
+                response_body = response.read().decode("utf-8")
+                content_type = response.headers.get("Content-Type", "")
+                if "application/json" in content_type:
+                    return Response(json.loads(response_body), status=response.status)
+                return Response({"response": response_body}, status=response.status)
+        except HTTPError as exc:
+            error_body = exc.read().decode("utf-8") if exc.fp else ""
+            try:
+                error_json = json.loads(error_body) if error_body else {"detail": str(exc)}
+            except json.JSONDecodeError:
+                error_json = {"detail": error_body or str(exc)}
+            return Response(error_json, status=exc.code)
+        except URLError as exc:
+            return Response({"detail": f"Expert system unavailable: {exc.reason}"}, status=status.HTTP_502_BAD_GATEWAY)
 
 
 class TaggingChecklistView(APIView):

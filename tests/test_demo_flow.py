@@ -8,6 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
 from proofs.models import ProgrammingQuestion, TodoItem
+from scheduling.models import Session
 
 
 def register_and_login(client: APIClient, username: str, role: str, extra: dict | None = None) -> str:
@@ -100,6 +101,7 @@ def test_demo_flow_e2e() -> None:
     )
     assert complete.status_code == 201
     proof_id = complete.json()["id"]
+    assert complete.json()["task"] == Session.objects.get(id=session_id).task_id
 
     analysis = student_client.get(f"/api/proofs/{proof_id}/analysis/")
     assert analysis.status_code == 200

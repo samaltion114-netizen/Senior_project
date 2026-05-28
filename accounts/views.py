@@ -21,6 +21,7 @@ from accounts.models import (
     EmailVerificationToken,
     ExpertAssignment,
     ExpertProfile,
+    ExpertRating,
     Notification,
     PasswordResetToken,
     PaymentRecord,
@@ -38,6 +39,8 @@ from accounts.serializers import (
     EmailTokenObtainPairSerializer,
     ExpertAssignmentSerializer,
     ExpertListSerializer,
+    ExpertMeSerializer,
+    ExpertRatingSerializer,
     FCMTokenUpdateSerializer,
     NotificationSerializer,
     PasswordResetConfirmSerializer,
@@ -49,7 +52,7 @@ from accounts.serializers import (
     UserBadgeSerializer,
     UserSerializer,
 )
-from accounts.services import create_notification, log_user_activity
+from accounts.services import create_notification, log_user_activity, refresh_expert_rating_summary
 
 try:
     import stripe
@@ -101,6 +104,22 @@ class ExpertListView(generics.ListAPIView):
         if search:
             queryset = queryset.filter(Q(user__username__icontains=search) | Q(user__first_name__icontains=search) | Q(user__last_name__icontains=search))
         return queryset
+
+
+class ExpertMeView(APIView):
+    """Return or update the authenticated expert profile."""
+
+    permission_classes = [permissions.IsAuthenticated, IsExpert]
+
+    def get(self, request, *args, **kwargs) -> Response:
+        return Response(ExpertMeSerializer(request.user.expert_profile).data)
+
+    @extend_schema(request=ExpertMeSerializer, responses={200: ExpertMeSerializer})
+    def patch(self, request, *args, **kwargs) -> Response:
+        serializer = ExpertMeSerializer(request.user.expert_profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 
 class FCMTokenUpdateView(APIView):
@@ -158,6 +177,71 @@ class NotificationListView(APIView):
     def get(self, request, *args, **kwargs) -> Response:
         queryset = Notification.objects.filter(user=request.user)
         return Response(NotificationSerializer(queryset, many=True).data)
+
+
+class ExpertRatingView(APIView):
+    """Allow a student to rate an expert they have worked with."""
+
+    permission_classes = [permissions.IsAuthenticated, IsStudent]
+
+    @transaction.atomic
+    @extend_schema(request=ExpertRatingSerializer, responses={200: dict})
+    def post(self, request, id: int, *args, **kwargs) -> Response:
+        serializer = ExpertRatingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        expert = User.objects.filter(id=id, is_expert=True).select_related("expert_profile").first()
+        if expert is None:
+            return Response({"detail": "Expert not found."}, status=status.HTTP_404_NOT_FOUND)
+        if expert.id == request.user.id:
+            return Response({"detail": "You cannot rate yourself."}, status=status.HTTP_400_BAD_REQUEST)
+        if not ExpertAssignment.objects.filter(student=request.user, expert=expert).exists():
+            return Response({"detail": "You can only rate experts you have been assigned to."}, status=status.HTTP_403_FORBIDDEN)
+
+        rating, created = ExpertRating.objects.update_or_create(
+            student=request.user,
+            expert=expert,
+            defaults={
+                "rating": serializer.validated_data["rating"],
+                "feedback": serializer.validated_data.get("feedback", ""),
+            },
+        )
+        summary = refresh_expert_rating_summary(expert=expert)
+        create_notification(
+            user=expert,
+            type=Notification.TYPE_GAMIFICATION,
+            title="New expert rating",
+            message=(
+                f"You received a {rating.rating}-star rating from {request.user.username}. "
+                f"Average rating is now {summary['average_rating']:.2f}."
+            ),
+            related_id=rating.id,
+            metadata={
+                "rating": rating.rating,
+                "average_rating": summary["average_rating"],
+                "created": created,
+            },
+        )
+        if summary["level_changed"]:
+            create_notification(
+                user=expert,
+                type=Notification.TYPE_GAMIFICATION,
+                title="Expert level changed",
+                message=f"Your level changed from {summary['previous_level']} to {summary['current_level']}.",
+                related_id=rating.id,
+                metadata=summary,
+            )
+        return Response(
+            {
+                "detail": "Rating saved.",
+                "created": created,
+                "rating": rating.rating,
+                "feedback": rating.feedback,
+                "average_rating": summary["average_rating"],
+                "expert_level": summary["current_level"],
+            },
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
 
 
 class AssignmentListView(APIView):
@@ -378,7 +462,11 @@ class PaymentRecordListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, *args, **kwargs) -> Response:
-        queryset = PaymentRecord.objects.filter(user=request.user)
+        if request.user.is_expert and not request.user.is_student:
+            queryset = PaymentRecord.objects.filter(expert=request.user, status=PaymentRecord.STATUS_SUCCEEDED)
+        else:
+            queryset = PaymentRecord.objects.filter(user=request.user)
+        queryset = queryset.select_related("user", "expert").order_by("-created_at")
         return Response(PaymentRecordSerializer(queryset, many=True).data)
 
 

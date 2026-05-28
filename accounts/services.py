@@ -5,9 +5,10 @@ from pathlib import Path
 from typing import Any
 
 from django.conf import settings
+from django.db.models import Avg
 from django.utils import timezone
 
-from accounts.models import Badge, Notification, User, UserActivityLog, UserBadge
+from accounts.models import Badge, ExpertRating, Notification, User, UserActivityLog, UserBadge
 
 try:
     import firebase_admin
@@ -82,6 +83,34 @@ def award_badge_if_eligible(user: User) -> str | None:
     award.awarded_at = timezone.now()
     award.save(update_fields=["awarded_at"])
     return badge.slug
+
+
+def refresh_expert_rating_summary(*, expert: User) -> dict[str, Any]:
+    """Recalculate the expert's average rating and apply demotion rules."""
+    profile = expert.expert_profile
+    aggregate = ExpertRating.objects.filter(expert=expert).aggregate(average=Avg("rating"))
+    average_raw = aggregate["average"] or 0
+    average_rating = round(float(average_raw), 2)
+    previous_level = profile.expertise_level
+    current_level = previous_level
+
+    if average_rating < 2.0 and previous_level == "certified":
+        current_level = "junior"
+    elif average_rating < 3.0 and previous_level == "senior":
+        current_level = "certified"
+
+    update_fields = ["average_rating"]
+    profile.average_rating = average_rating
+    if current_level != previous_level:
+        profile.expertise_level = current_level
+        update_fields.append("expertise_level")
+    profile.save(update_fields=update_fields)
+    return {
+        "average_rating": average_rating,
+        "previous_level": previous_level,
+        "current_level": current_level,
+        "level_changed": current_level != previous_level,
+    }
 
 
 def _firebase_ready() -> bool:

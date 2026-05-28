@@ -3,6 +3,7 @@ from django.urls import path
 
 from ai.views import (
     DailyChallengeGenerateView,
+    ExpertSystemProxyView,
     InterviewMessageView,
     InterviewStartView,
     MindmapGenerateView,
@@ -24,4 +25,5 @@ urlpatterns = [
     path("ai/models/select/", ModelWeightSelectView.as_view(), name="model-select"),
     path("ai/mindmap/generate/", MindmapGenerateView.as_view(), name="ai-mindmap-generate"),
     path("ai/mindmap/svg/", MindmapSvgView.as_view(), name="ai-mindmap-svg"),
+    path("ai/expert-system/proxy/", ExpertSystemProxyView.as_view(), name="expert-system-proxy"),
 ]

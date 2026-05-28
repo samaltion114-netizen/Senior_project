@@ -6,7 +6,7 @@ from proofs.models import Challenge, ProgrammingQuestion, Proof, TodoItem
 
 @admin.register(Proof)
 class ProofAdmin(admin.ModelAdmin):
-    list_display = ("id", "session", "analysis_status", "created_at")
+    list_display = ("id", "task", "analysis_status", "created_at")
 
 
 @admin.register(ProgrammingQuestion)

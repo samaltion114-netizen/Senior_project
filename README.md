@@ -16,7 +16,7 @@ Production-oriented Django 4.2 + DRF backend for the Nahd senior project scenari
 - `core`: objectives/tasks
 - `ai`: interview expert-system, tagging/checklists, time estimate, event logs, Celery tasks
 - `scheduling`: optimized session allocation
-- `proofs`: session completion, proof upload/analysis, programming questions, todos, challenges
+- `proofs`: task completion, proof upload/analysis, programming questions, todos, challenges
 
 ## Run With Docker
 ```bash
@@ -61,6 +61,8 @@ register -> interview -> objective -> tasks -> schedule -> complete session -> p
 - `AI_PROVIDER` (`mock` or `openai`)
 - `PROOF_CONFIDENCE_THRESHOLD`
 - `FIREBASE_CREDENTIALS_PATH` (optional, defaults to `firebase-credentials.json` in `Project_root`)
+- `AI_EXPERT_SYSTEM_URL` (defaults to `http://127.0.0.1:8001/api/expert/`)
+- `DOCKER_ENV` (optional override for Docker database detection)
 
 No secrets are committed.
 
@@ -175,6 +177,9 @@ curl -X POST http://localhost/api/ai/models/select/ \
 - `GET /api/proofs/{id}/analysis/`
 - `GET /api/challenges/`
 - `GET /api/experts/?search=<name>`
+- `GET/PATCH /api/experts/me/`
+- `POST /api/experts/{id}/rate/`
+- `POST /api/ai/expert-system/proxy/`
 - `POST /api/assignments/request/`
 - `POST /api/trainer/assignments/{id}/accept/`
 - `POST /api/trainer/assignments/{id}/reject/`

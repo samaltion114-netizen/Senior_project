@@ -45,7 +45,8 @@ def evaluate_image_quality(image_path: str) -> dict[str, Any]:
 def run_proof_analysis(proof: Proof) -> Proof:
     """Run AI proof analysis and create derived artifacts."""
     service = get_ai_service(capability=AIModelWeight.CAPABILITY_PROOF)
-    task = proof.session.task
+    task = proof.task
+    student = task.objective.student
     quality = evaluate_image_quality(proof.image.path)
     payload = {
         "task_description": f"{task.title}. {task.description}. Expected: {task.expected_output_text}",
@@ -82,7 +83,7 @@ def run_proof_analysis(proof: Proof) -> Proof:
     prompt = payload["task_description"] + "\n" + payload["explanation_text"]
     response = str(analysis)
     AIEventLog.objects.create(
-        user=proof.session.student,
+        user=student,
         event_type="proof_analysis",
         prompt=prompt,
         response=response,
@@ -91,7 +92,7 @@ def run_proof_analysis(proof: Proof) -> Proof:
         embeddings_metadata={"proof_id": proof.id},
     )
     create_notification(
-        user=proof.session.student,
+        user=student,
         type=Notification.TYPE_AI_ANALYSIS,
         title="Proof analysis ready",
         message="AI finished analyzing your submitted proof.",
@@ -103,7 +104,7 @@ def run_proof_analysis(proof: Proof) -> Proof:
 
 def _apply_adaptive_learning_adjustment(proof: Proof, analysis: dict[str, Any]) -> None:
     """Adjust student learning path level based on proof quality/performance."""
-    student = proof.session.student
+    student = proof.task.objective.student
     path, _ = LearningPath.objects.get_or_create(student=student)
     before = path.current_level
     confidence = float(analysis.get("confidence_score", 0.0) or 0.0)

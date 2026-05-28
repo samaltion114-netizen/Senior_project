@@ -38,8 +38,8 @@ class ProofSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Proof
-        fields = ("id", "session", "image", "explanation_text", "ai_analysis", "analysis_status", "programming_questions")
-        read_only_fields = ("session", "ai_analysis", "analysis_status")
+        fields = ("id", "task", "image", "explanation_text", "ai_analysis", "analysis_status", "programming_questions")
+        read_only_fields = ("task", "ai_analysis", "analysis_status")
 
 
 class ChallengeSerializer(serializers.ModelSerializer):

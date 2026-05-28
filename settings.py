@@ -8,6 +8,28 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 
+
+def _load_env_file(path: Path) -> None:
+    """Load simple KEY=VALUE pairs from a local .env file if present."""
+    if not path.is_file():
+        return
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[7:].lstrip()
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+_load_env_file(BASE_DIR / ".env")
+
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-dev-key")
 DEBUG = os.getenv("DEBUG", "1") == "1"
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
@@ -60,14 +82,20 @@ TEMPLATES = [
 WSGI_APPLICATION = "wsgi.application"
 ASGI_APPLICATION = "asgi.application"
 
-if os.getenv("POSTGRES_HOST"):
+def _running_in_docker() -> bool:
+    docker_flag = os.getenv("DOCKER_ENV", "").strip().lower()
+    return docker_flag in {"1", "true", "yes", "on"} or Path("/.dockerenv").exists()
+
+
+postgres_host = os.getenv("POSTGRES_HOST")
+if postgres_host or _running_in_docker():
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
             "NAME": os.getenv("POSTGRES_DB", "nahd"),
             "USER": os.getenv("POSTGRES_USER", "nahd"),
             "PASSWORD": os.getenv("POSTGRES_PASSWORD", "nahd"),
-            "HOST": os.getenv("POSTGRES_HOST"),
+            "HOST": postgres_host or "db",
             "PORT": os.getenv("POSTGRES_PORT", "5432"),
         }
     }
@@ -158,6 +186,7 @@ AI_EXTERNAL_FEATURE_DIR = os.getenv("AI_EXTERNAL_FEATURE_DIR", str(BASE_DIR.pare
 AI_MINDMAP_SVG_PATH = os.getenv("AI_MINDMAP_SVG_PATH", str(BASE_DIR / "ai" / "data" / "my_final_mindmap.svg"))
 AI_LOCAL_INFERENCE_URL = os.getenv("AI_LOCAL_INFERENCE_URL", "http://127.0.0.1:8080")
 AI_LOCAL_INFERENCE_TIMEOUT = int(os.getenv("AI_LOCAL_INFERENCE_TIMEOUT", "45"))
+AI_EXPERT_SYSTEM_URL = os.getenv("AI_EXPERT_SYSTEM_URL", "http://127.0.0.1:8001/api/expert/")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
 FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH", str(BASE_DIR / "firebase-credentials.json"))

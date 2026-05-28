@@ -7,6 +7,8 @@ from accounts.views import (
     ChatMessageListCreateView,
     ChatThreadListView,
     ExpertListView,
+    ExpertMeView,
+    ExpertRatingView,
     LeaderboardView,
     NotificationListView,
     PaymentIntentView,
@@ -19,6 +21,8 @@ from accounts.views import (
 
 urlpatterns = [
     path("experts/", ExpertListView.as_view(), name="experts"),
+    path("experts/me/", ExpertMeView.as_view(), name="expert-me"),
+    path("experts/<int:id>/rate/", ExpertRatingView.as_view(), name="expert-rate"),
     path("leaderboard/", LeaderboardView.as_view(), name="leaderboard"),
     path("users/<int:id>/badges/", UserBadgesView.as_view(), name="user-badges"),
     path("notifications/", NotificationListView.as_view(), name="notifications"),

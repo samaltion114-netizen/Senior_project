@@ -1,6 +1,7 @@
 """Serializers for accounts app."""
 from __future__ import annotations
 
+from datetime import timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -232,6 +233,7 @@ class ExpertListSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source="user.id", read_only=True)
     user_name = serializers.CharField(source="user.username", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
+    average_rating = serializers.SerializerMethodField()
 
     class Meta:
         model = ExpertProfile
@@ -250,6 +252,41 @@ class ExpertListSerializer(serializers.ModelSerializer):
             "wallet_balance",
             "average_rating",
         )
+
+    def get_average_rating(self, obj: ExpertProfile) -> float:
+        return round(float(obj.average_rating or 0), 2)
+
+
+class ExpertMeSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source="user.username", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+    average_rating = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ExpertProfile
+        fields = (
+            "id",
+            "user_name",
+            "email",
+            "expertise_level",
+            "subscription_price",
+            "max_students",
+            "expertise_tags",
+            "availability_schedule",
+            "bio",
+            "is_accepting_new_students",
+            "wallet_balance",
+            "average_rating",
+        )
+        read_only_fields = ("wallet_balance", "average_rating")
+
+    def get_average_rating(self, obj: ExpertProfile) -> float:
+        return round(float(obj.average_rating or 0), 2)
+
+
+class ExpertRatingSerializer(serializers.Serializer):
+    rating = serializers.IntegerField(min_value=1, max_value=5)
+    feedback = serializers.CharField(required=False, allow_blank=True, default="")
 
 
 class BadgeSerializer(serializers.ModelSerializer):
@@ -334,12 +371,18 @@ class ChatThreadSerializer(serializers.ModelSerializer):
 
 class PaymentRecordSerializer(serializers.ModelSerializer):
     expert_name = serializers.CharField(source="expert.username", read_only=True)
+    student_name = serializers.CharField(source="user.username", read_only=True)
+    amount = serializers.SerializerMethodField()
+    payment_date = serializers.DateTimeField(source="created_at", read_only=True)
+    subscription_ends_at = serializers.SerializerMethodField()
+    chat_thread_id = serializers.SerializerMethodField()
 
     class Meta:
         model = PaymentRecord
         fields = (
             "id",
             "user",
+            "student_name",
             "expert",
             "expert_name",
             "provider",
@@ -349,10 +392,26 @@ class PaymentRecordSerializer(serializers.ModelSerializer):
             "client_secret",
             "status",
             "metadata",
+            "payment_date",
+            "subscription_ends_at",
+            "chat_thread_id",
             "created_at",
             "updated_at",
         )
         read_only_fields = ("user", "provider", "payment_intent_id", "client_secret", "status", "created_at", "updated_at")
+
+    def get_amount(self, obj: PaymentRecord) -> float:
+        return round(float(obj.amount) / 100.0, 2)
+
+    def get_subscription_ends_at(self, obj: PaymentRecord):
+        return obj.created_at + timedelta(days=30)
+
+    def get_chat_thread_id(self, obj: PaymentRecord) -> int | None:
+        assignment_id = obj.metadata.get("assignment_id") if isinstance(obj.metadata, dict) else None
+        if not assignment_id:
+            return None
+        thread = ChatThread.objects.filter(assignment_id=assignment_id).only("id").first()
+        return thread.id if thread else None
 
 
 class StripeWebhookSerializer(serializers.Serializer):
