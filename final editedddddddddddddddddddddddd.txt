@@ -1,0 +1,432 @@
+1-
+للبيك إند (طارق):
+1. جعل الحقول Unique + Required في الـ Model
+python
+# في Django models.py
+class User(AbstractUser):
+    username = models.CharField(max_length=150, unique=True, blank=False)
+    email    = models.EmailField(unique=True, blank=False)
+    # password موجود بالأصل في AbstractUser وإلزامي
+    USERNAME_FIELD = 'email'  # تسجيل الدخول بالإيميل
+    REQUIRED_FIELDS = ['username']
+2. Endpoint تعديل البروفايل للطالب
+PATCH /api/auth/profile/update/
+python
+# يقبل هذه الحقول
+{
+  "username": "new_username",  # اختياري
+  "email":    "new@email.com", # اختياري
+  "password": "newPass123"     # اختياري
+}
+# إذا الـ username أو email مأخوذ من حساب آخر يرجع:
+# {"detail": "A user with this username already exists."} status=400
+# {"detail": "A user with this email already exists."}    status=400
+3. Endpoint تعديل بروفايل الخبير (يضاف له الحقول أعلاه)
+PATCH /api/experts/me/
+python
+# يضاف لما هو موجود:
+{
+  "username": "new_username",
+  "email":    "new@email.com",
+  "password": "newPass123",
+  "bio": "...",
+  "max_students": 5
+}
+# نفس التحقق من uniqueness
+4. تسجيل الدخول — يقبل email أو username
+python
+# LOGIN يقبل إما الإيميل أو اليوزرنيم
+POST /api/auth/login/
+{
+  "email": "user@email.com",  # أو username
+  "password": "pass123"
+}
+للفرونت (طارق):
+1. login_request_body.dart — أرسل email فقط (ليس username وإيميل معاً)
+الكود الحالي (مشكلة):
+
+dart
+Map<String, dynamic> toJson() => {
+  'email': email,
+  'username': email, // ❌ يُرسل الإيميل كـ username أيضاً
+  'password': password,
+};
+الكود الجديد:
+
+dart
+Map<String, dynamic> toJson() => {
+  'email': email,    // ✅ فقط
+  'password': password,
+};
+2. expert_edit_profile_form.dart — أرسل username/email/password للـ API
+الكود الحالي: updateProfile() لا يُرسل username/email/password للـ API:
+
+dart
+await context.read<ExpertProfileCubit>().updateProfile(
+  bio: _bioController.text.trim(),
+  maxStudents: _currentCapacity,
+  username: _usernameController.text.trim(), // ✅ يُمرر للـ cubit
+  email: _emailController.text.trim(),       // ✅ يُمرر للـ cubit
+);
+في expert_dashboard_repo.dart — updateMyProfile() يجب أن يُرسل هذه الحقول:
+
+dart
+Future<ExpertProfileModel> updateMyProfile({
+  String? bio,
+  int? maxStudents,
+  String? username,  // ← أضف هذا
+  String? email,     // ← أضف هذا
+  String? password,  // ← أضف هذا
+}) async {
+  final Map<String, dynamic> data = {};
+  if (bio != null)        data['bio'] = bio;
+  if (maxStudents != null) data['max_students'] = maxStudents;
+  if (username != null)   data['username'] = username;  // ← أضف
+  if (email != null)      data['email'] = email;        // ← أضف
+  if (password != null && password.isNotEmpty) data['password'] = password; // ← أضف
+  final res = await _dio.patch('experts/me/', data: data);
+  // إذا البيك إند رجع 400 بسبب unique violation:
+  // {"detail": "A user with this email already exists."}
+  // الـ DioException يُمرر للـ cubit ويظهر للمستخدم
+  ...
+}
+3. edit_profile_screen.dart (الطالب) — أرسل للـ API بدلاً من الحفظ المحلي
+الكود الحالي: يحفظ محلياً فقط بدون API call:
+
+dart
+// ❌ فقط يحفظ محلياً
+await SharedPrefHelper.setSecuredString('userEmail', _emailController.text.trim());
+الكود الجديد — يضيف API call:
+
+dart
+// 1. أرسل للـ API
+final response = await _dio.patch('auth/profile/update/', data: {
+  if (_usernameController.text.trim() != _oldUsername)
+    'username': _usernameController.text.trim(),
+  if (_emailController.text.trim().isNotEmpty)
+    'email': _emailController.text.trim(),
+  if (_passwordController.text.length >= 8)
+    'password': _passwordController.text,
+});
+// 2. إذا نجح — احفظ محلياً
+await SharedPrefHelper.setSecuredString('userEmail', _emailController.text.trim());
+// ...
+// 3. إذا فشل بسبب unique — أظهر الـ error للمستخدم
+// "This email is already taken." ← يُعرض كـ SnackBar
+4. معالجة الـ 400 Error (Email/Username مكرر)
+في كلا الشاشتين، أضف معالجة خاصة للـ unique violation:
+
+dart
+} catch (e) {
+  final msg = e.toString().replaceAll('Exception: ', '');
+  
+  // رسالة واضحة للمستخدم
+  if (msg.contains('email')) {
+    showError('هذا البريد الإلكتروني مستخدم من حساب آخر');
+  } else if (msg.contains('username')) {
+    showError('اسم المستخدم هذا مأخوذ، اختر اسماً آخر');
+  } else {
+    showError(msg);
+  }
+}
+ملخص للفرونت:
+الملف	التغيير
+login_request_body.dart	احذف 'username': email من toJson()
+expert_dashboard_repo.dart	أضف username, email, password لـ updateMyProfile()
+edit_profile_screen.dart	أضف PATCH /api/auth/profile/update/ call
+كلا شاشتي التعديل	أضف معالجة الـ 400 error لـ unique violations
+
+
+
+
+
+3-جرب ال notification
+
+
+
+
+
+
+
+4-اربط مع ai كامل التطبيق
+
+
+
+
+
+
+
+
+5-عميل test لكل المشروع بشكل كامل كل شغلة جربها لاتترك شي ماتجربو 
+
+
+
+
+
+
+6- قل لطارق (Backend Developer) يُعدّل على الـ API التالي:
+1. GET /api/experts/ — قائمة الخبراء (Student Marketplace)
+يجب أن كل خبير في الاستجابة يُرجع هذه الحقول بقيم حقيقية ومحدَّثة:
+
+json
+{
+  "id": 3,
+  "max_students": 1,
+  "current_active_slots": 1,
+  "is_accepting_new_students": false
+}
+current_active_slots: عدد الطلاب الذين عندهم assignment بحالة active أو awaiting_payment مع هذا الخبير — يجب أن يُحسَب real-time من الـ database، وليس قيمة ثابتة.
+is_accepting_new_students: يُصبح false تلقائياً إذا current_active_slots >= max_students.
+2. PATCH /api/experts/me/ — تعديل بروفايل الخبير
+عند تغيير max_students، يجب أن يُحدَّث فوراً في الـ database ويظهر في GET /api/experts/ عند أول استدعاء بعده.
+
+json
+{
+  "max_students": 5
+}
+3. POST /api/assignments/request/ — طلب الطالب للخبير
+قبل إنشاء الطلب، الـ backend يتحقق:
+
+python
+if expert.current_active_slots >= expert.max_students:
+    return Response({"detail": "This expert is at full capacity."}, status=400)
+لإرجاع error واضح بدلاً من قبول الطلب.
+
+4. POST /api/assignments/{id}/accept/ — قبول الخبير للطلب
+نفس التحقق هنا أيضاً:
+
+python
+if expert.current_active_slots >= expert.max_students:
+    return Response({"detail": "Capacity limit reached."}, status=400)
+الملخص للـ Backend:
+يا طارق، حقل current_active_slots في endpoint قائمة الخبراء GET /api/experts/ يجب أن يكون count حقيقي من الـ DB للطلاب النشطين — مش قيمة ثابتة ومش null. وكمان is_accepting_new_students يكون false تلقائياً إذا الخبير وصل لسعته. وعند PATCH /api/experts/me/ لتغيير max_students، التغيير يظهر فوراً في قائمة الخبراء.
+
+بمجرد ما طارق يُنفّذ هذا، نحذف كل الـ SharedPreferences المحلية المتعلقة بالمقاعد ونعتمد مباشرة على الـ API.
+
+
+
+لاتنسى تزبط هذا شي بافرونت 
+
+قل لطارق (Frontend Developer) — بعد ما البيك إند يجهز:
+1. expert_repo.dart — احذف كل الـ SharedPreferences المتعلقة بالمقاعد
+الكود الحالي (يجب حذفه):
+
+dart
+// كل هذا الجزء يُحذف بالكامل
+final mockBookings = await SharedPrefHelper.getMockExpertBookings(expert.id);
+final realActive1 = await SharedPrefHelper.getInt('expert_real_active_slots_${expert.id}');
+final realActive2 = ...
+final realActiveFromPrefs = ...
+final mockMaxStudents = await SharedPrefHelper.getMockExpertMaxStudents(expert.id);
+...
+final finalActiveSlots = ...
+final finalMaxStudents = ...
+الكود الجديد (بسيط ومباشر):
+
+dart
+// فقط خذ القيم مباشرة من الـ API
+modifiedExperts.add(ExpertModel(
+  ...
+  maxStudents: expert.maxStudents,           // من الـ API مباشرة
+  currentActiveSlots: expert.currentActiveSlots, // من الـ API مباشرة
+  isAcceptingNewStudents: expert.isAcceptingNewStudents, // من الـ API مباشرة
+  ...
+));
+2. expert_assignments_cubit.dart — احذف حفظ SharedPrefs
+الكود الحالي (يجب حذفه):
+
+dart
+// احذف هذا الـ block بالكامل
+try {
+  final profile = await _repo.getMyProfile();
+  final takenSlots = _active.length + _awaitingPayment.length;
+  await SharedPrefHelper.setData('expert_real_active_slots_${profile.id}', takenSlots);
+  if (profile.maxStudents != null) {
+    await SharedPrefHelper.setMockExpertMaxStudents(profile.id, profile.maxStudents!);
+  }
+} catch (e) { ... }
+3. expert_profile_cubit.dart — احذف حفظ maxStudents في SharedPrefs
+الكود الحالي (يجب حذفه):
+
+dart
+// احذف هاتين الـ block
+if (maxStudents != null) {
+  await SharedPrefHelper.setMockExpertMaxStudents(mergedProfile.id, maxStudents);
+}
+4. expert_repo.dart — requestAssignment() — تعامل مع الـ 400 error بشكل صحيح
+الكود الحالي (مشكلة — يُرجع mock حتى عند الـ error):
+
+dart
+} on DioException catch (e) {
+  // نرجع استجابة وهمية ناجحة للتجربة  ← هذا يجب حذفه
+  return AssignmentModel(id: 999, ...);
+}
+الكود الجديد:
+
+dart
+} on DioException catch (e) {
+  // إذا البيك إند رفض لأن الخبير ممتلئ — أظهر رسالة واضحة
+  final detail = e.response?.data?['detail'] ?? 
+                 e.response?.data?['error'] ?? 
+                 'حدث خطأ، يرجى المحاولة مجدداً';
+  throw Exception(detail.toString());
+}
+5. expert_directory_card.dart و expert_profile_header_card.dart
+لا تغيير مطلوب — الكود يقرأ expert.currentActiveSlots و expert.maxStudents مباشرة، وبعد ما البيك إند يُصلح القيم ستظهر صح تلقائياً.
+
+6. expert_details_bottom_bar.dart
+لا تغيير مطلوب — الـ isFull check موجود وصحيح:
+
+dart
+final active = expert.currentActiveSlots ?? 0;
+final max = expert.maxStudents;
+final isFull = max != null && active >= max; // ✅ يعمل مباشرة مع API
+ملخص لطارق الفرونت:
+بعد ما البيك إند يُصلح الـ API، الشغل على الفرونت هو حذف كل الـ SharedPreferences المتعلقة بالمقاعد من 3 ملفات (expert_repo.dart, expert_assignments_cubit.dart, expert_profile_cubit.dart). باقي الـ UI يعمل صح تلقائياً لأنه أصلاً مبني على currentActiveSlots و maxStudents من الـ API.
+
+
+
+
+
+
+
+
+
+
+
+7-مرحباً طارق،
+يعطيك العافية، نريد إضافة ميزة (Business Rule) جديدة في الباك إند تخص تقييم الخبراء وتأثيره على مستواهم وسعرهم.
+المطلوب هو تعديل الـ endpoint الخاص بتقييم الخبير: POST /api/experts/{expert_id}/rate/
+بحيث عند إرسال تقييم جديد من الطالب، يتم تطبيق المنطق التالي في السيرفر:
+حفظ التقييم الجديد وحساب متوسط التقييمات الجديد (average_rating) للخبير.
+شرط التخفيض: إذا كان لدى الخبير 3 تقييمات أو أكثر، وانخفض متوسط تقييمه عن 3.5 نجوم:
+تخفيض المستوى (expertise_level):
+إذا كان senior ➔ يصبح certified
+إذا كان certified ➔ يصبح junior
+تخفيض السعر: تخفيض سعر الاشتراك الشهري (subscription_price) وسعر الساعة (hourly_rate) بنسبة 10% (أي ضرب السعر الحالي بـ 0.90).
+حفظ التعديلات في قاعدة البيانات وإرجاع البيانات المحدثة في الاستجابة (Response).
+💻 مثال مقترح لتطبيق المنطق (Python / Django or FastAPI style):
+python
+# عند استقبال التقييم الجديد
+def rate_expert(request, expert_id):
+    rating_value = int(request.data.get('rating'))
+    
+    # 1. حفظ التقييم الجديد في قاعدة البيانات
+    Rating.objects.create(expert_id=expert_id, student=request.user, score=rating_value)
+    
+    expert = Expert.objects.get(id=expert_id)
+    
+    # 2. حساب المتوسط الجديد لتقييمات هذا الخبير
+    ratings = Rating.objects.filter(expert_id=expert_id)
+    avg_rating = ratings.aggregate(Avg('score'))['score__avg']
+    expert.average_rating = avg_rating
+    
+    # 3. منطق تخفيض المستوى والسعر (إذا كان المتوسط أقل من 3.5 بعد 3 تقييمات على الأقل)
+    if ratings.count() >= 3 and avg_rating < 3.5:
+        if expert.expertise_level == 'senior':
+            expert.expertise_level = 'certified'
+            if expert.subscription_price:
+                expert.subscription_price = round(expert.subscription_price * 0.90, 2)
+            if expert.hourly_rate:
+                expert.hourly_rate = round(expert.hourly_rate * 0.90, 2)
+        elif expert.expertise_level == 'certified':
+            expert.expertise_level = 'junior'
+            if expert.subscription_price:
+                expert.subscription_price = round(expert.subscription_price * 0.90, 2)
+            if expert.hourly_rate:
+                expert.hourly_rate = round(expert.hourly_rate * 0.90, 2)
+                
+    expert.save()
+    
+    # 4. إرجاع البيانات المحدثة ليعكسها التطبيق فوراً
+    return Response({
+        "success": True,
+        "average_rating": expert.average_rating,
+        "expertise_level": expert.expertise_level,
+        "subscription_price": expert.subscription_price,
+        "hourly_rate": expert.hourly_rate
+    })
+	
+	
+	
+	لاتنسى ان تعمل هذا على فرونت 
+	
+قل لطارق الفرونت — بعد ما البيك إند ينفذ الـ rating logic:
+الملف الوحيد الذي يحتاج تعديل: expert_repo.dart
+الكود الحالي (يجب استبداله بالكامل):
+
+dart
+// كل هذا الكود يُحذف — كان mock محلي
+Future<Map<String, dynamic>> rateExpert(int expertId, int rating) async {
+  String currentLevel = 'senior';
+  double currentPrice = 30.0;
+  try {
+    final experts = await getExperts();
+    final target = experts.firstWhere((e) => e.id == expertId);
+    currentLevel = target.expertiseLevel ?? 'senior';
+    currentPrice = target.subscriptionPrice ?? target.hourlyRate ?? 30.0;
+  } catch (_) {}
+  final mockResult = await SharedPrefHelper.submitMockExpertRating(
+    expertId, rating, currentLevel, currentPrice,
+  );
+  try {
+    final response = await _dio.post('experts/$expertId/rate/', data: {'rating': rating});
+    final responseData = response.data as Map<String, dynamic>;
+    return {
+      ...responseData,
+      'average_rating': mockResult['average_rating'],   // ❌ يتجاهل البيك إند
+      'expertise_level': mockResult['expertise_level'], // ❌ يتجاهل البيك إند
+      'subscription_price': mockResult['subscription_price'],
+    };
+  } on DioException catch (e) {
+    return {  // ❌ يُرجع mock حتى لو فشل السيرفر
+      'success': true,
+      'average_rating': mockResult['average_rating'],
+      ...
+    };
+  }
+}
+الكود الجديد (بسيط — يعتمد على البيك إند مباشرة):
+
+dart
+Future<Map<String, dynamic>> rateExpert(int expertId, int rating) async {
+  try {
+    final response = await _dio.post(
+      'experts/$expertId/rate/',
+      data: {'rating': rating},
+    );
+    // البيك إند يُرجع average_rating, expertise_level, subscription_price مباشرة
+    return response.data as Map<String, dynamic>;
+  } on DioException catch (e) {
+    throw _handleError(e);
+  }
+}
+كذلك في getExperts() — احذف الـ mock rating:
+dart
+// احذف هذا السطر
+final mockRating = await SharedPrefHelper.getMockExpertAverageRating(expert.id);
+// وهذا السطر — استخدم قيمة الـ API مباشرة
+averageRating: mockRating ?? expert.averageRating,  // ❌ قديم
+averageRating: expert.averageRating,                 // ✅ جديد
+لا تغيير مطلوب في:
+mandatory_rating_dialog.dart ✅ — يستدعي rateExpert() ويستقبل النتيجة
+optional_rating_dialog.dart ✅ — نفس الشيء
+expert_directory_card.dart ✅ — يعرض expert.averageRating و expert.levelLabel مباشرة
+expert_profile_header_card.dart ✅ — نفس الشيء
+ملخص لطارق الفرونت:
+فقط عدّل دالة rateExpert() في 
+
+expert_repo.dart
+ لتعتمد على الاستجابة الحقيقية من البيك إند بدلاً من الـ mock المحلي. والـ UI كله جاهز ويعمل تلقائياً لأنه أصلاً مبني على averageRating, expertiseLevel, subscriptionPrice من الـ ExpertModel.
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 8-
+	

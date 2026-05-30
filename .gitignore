@@ -231,3 +231,4 @@ ai_model_weights/*
 *.pth
 *.ckpt
 *.safetensors
+.aider*

@@ -231,6 +231,49 @@ class ExpertRatingView(APIView):
                 related_id=rating.id,
                 metadata=summary,
             )
+        
+        # Apply business rule: downgrade level and price if average rating drops below 3.5
+        expert_profile = expert.expert_profile
+        if expert_profile.average_rating < 3.5 and expert_profile.max_students >= 3:
+            # Calculate new level and prices
+            new_level = expert_profile.expertise_level
+            new_subscription_price = expert_profile.subscription_price
+            new_hourly_rate = expert_profile.hourly_rate
+            
+            if expert_profile.expertise_level == 'senior':
+                new_level = 'certified'
+                if expert_profile.subscription_price:
+                    new_subscription_price = round(expert_profile.subscription_price * 0.90, 2)
+                if new_hourly_rate:
+                    new_hourly_rate = round(new_hourly_rate * 0.90, 2)
+            elif expert_profile.expertise_level == 'certified':
+                new_level = 'junior'
+                if expert_profile.subscription_price:
+                    new_subscription_price = round(expert_profile.subscription_price * 0.90, 2)
+                if new_hourly_rate:
+                    new_hourly_rate = round(new_hourly_rate * 0.90, 2)
+            
+            # Update expert profile
+            expert_profile.expertise_level = new_level
+            expert_profile.subscription_price = new_subscription_price
+            expert_profile.hourly_rate = new_hourly_rate
+            expert_profile.save(update_fields=['expertise_level', 'subscription_price', 'hourly_rate'])
+            
+            # Return updated data
+            return Response(
+                {
+                    "detail": "Rating saved.",
+                    "created": created,
+                    "rating": rating.rating,
+                    "feedback": rating.feedback,
+                    "average_rating": summary["average_rating"],
+                    "expertise_level": new_level,
+                    "subscription_price": new_subscription_price,
+                    "hourly_rate": new_hourly_rate,
+                },
+                status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+            )
+        
         return Response(
             {
                 "detail": "Rating saved.",
@@ -266,6 +309,17 @@ class AssignmentRequestView(APIView):
         expert = User.objects.filter(id=serializer.validated_data["expert_id"], is_expert=True).first()
         if expert is None:
             return Response({"detail": "Expert not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if expert is at full capacity
+        expert_profile = expert.expert_profile
+        active_assignments = ExpertAssignment.objects.filter(
+            expert=expert,
+            status__in=["active", "awaiting_payment"]
+        ).count()
+        
+        if active_assignments >= expert_profile.max_students:
+            return Response({"detail": "This expert is at full capacity."}, status=status.HTTP_400_BAD_REQUEST)
+            
         assignment = ExpertAssignment.objects.create(
             student=request.user,
             expert=expert,
@@ -291,6 +345,17 @@ class TrainerAssignmentAcceptView(APIView):
         assignment = ExpertAssignment.objects.filter(id=id, expert=request.user).first()
         if assignment is None:
             return Response({"detail": "Assignment not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if expert is at full capacity
+        expert_profile = request.user.expert_profile
+        active_assignments = ExpertAssignment.objects.filter(
+            expert=request.user,
+            status__in=["active", "awaiting_payment"]
+        ).count()
+        
+        if active_assignments >= expert_profile.max_students:
+            return Response({"detail": "Capacity limit reached."}, status=status.HTTP_400_BAD_REQUEST)
+            
         assignment.status = ExpertAssignment.STATUS_AWAITING_PAYMENT
         assignment.expires_at = None
         assignment.rejection_reason = ""

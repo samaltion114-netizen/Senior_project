@@ -234,6 +234,8 @@ class ExpertListSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source="user.username", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
     average_rating = serializers.SerializerMethodField()
+    current_active_slots = serializers.SerializerMethodField()
+    is_accepting_new_students = serializers.SerializerMethodField()
 
     class Meta:
         model = ExpertProfile
@@ -251,10 +253,23 @@ class ExpertListSerializer(serializers.ModelSerializer):
             "bio",
             "wallet_balance",
             "average_rating",
+            "current_active_slots",
         )
 
     def get_average_rating(self, obj: ExpertProfile) -> float:
         return round(float(obj.average_rating or 0), 2)
+
+    def get_current_active_slots(self, obj: ExpertProfile) -> int:
+        # Calculate current active slots from assignments
+        return ExpertAssignment.objects.filter(
+            expert=obj.user,
+            status__in=["active", "awaiting_payment"]
+        ).count()
+
+    def get_is_accepting_new_students(self, obj: ExpertProfile) -> bool:
+        # Check if expert is accepting new students based on current slots
+        active_slots = self.get_current_active_slots(obj)
+        return obj.max_students > active_slots
 
 
 class ExpertMeSerializer(serializers.ModelSerializer):
@@ -277,6 +292,7 @@ class ExpertMeSerializer(serializers.ModelSerializer):
             "is_accepting_new_students",
             "wallet_balance",
             "average_rating",
+            "hourly_rate",
         )
         read_only_fields = ("wallet_balance", "average_rating")
 

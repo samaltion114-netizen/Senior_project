@@ -60,6 +60,7 @@ class ExpertProfile(models.Model):
     is_accepting_new_students = models.BooleanField(default=True)
     wallet_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     average_rating = models.DecimalField(max_digits=4, decimal_places=2, default=0)
+    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, default=1)
 
     def __str__(self) -> str:
         return f"ExpertProfile<{self.user.username}>"
