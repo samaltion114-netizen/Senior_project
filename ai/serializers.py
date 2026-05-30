@@ -70,3 +70,111 @@ class ModelWeightSelectSerializer(serializers.Serializer):
     model_name = serializers.CharField(max_length=120)
     weight_path = serializers.CharField(max_length=500)
     metadata = serializers.JSONField(required=False, default=dict)
+
+
+#
+# Expert-system transport schemas
+#
+
+
+class DomainOptionSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=12)
+    label = serializers.CharField(max_length=120)
+    description = serializers.CharField()
+
+
+class StartSessionRequestSerializer(serializers.Serializer):
+    domain = serializers.CharField(max_length=16)
+    kb_path = serializers.CharField(required=False, allow_null=True, allow_blank=True, max_length=500)
+
+
+class SubmitAnswerRequestSerializer(serializers.Serializer):
+    answer = serializers.JSONField()
+
+
+class QuestionPayloadSerializer(serializers.Serializer):
+    node_id = serializers.CharField(max_length=120)
+    variant_id = serializers.CharField(max_length=120)
+    text_ar = serializers.CharField()
+    text_en = serializers.CharField()
+    type = serializers.CharField(max_length=24)
+    fact_key = serializers.CharField(max_length=120)
+    scale_min = serializers.IntegerField(required=False, allow_null=True)
+    scale_max = serializers.IntegerField(required=False, allow_null=True)
+    numeric_min = serializers.FloatField(required=False, allow_null=True)
+    numeric_max = serializers.FloatField(required=False, allow_null=True)
+    choices_ar = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    choices_en = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+
+
+class ProgressPayloadSerializer(serializers.Serializer):
+    answered_count = serializers.IntegerField()
+    question_number = serializers.IntegerField()
+    estimated_total = serializers.IntegerField()
+    percent = serializers.FloatField()
+    can_go_back = serializers.BooleanField()
+
+
+class StartSessionResponseSerializer(serializers.Serializer):
+    session_id = serializers.CharField(max_length=64)
+    domain = serializers.CharField(max_length=16)
+    start_node = serializers.CharField(max_length=120)
+
+
+class QuestionEnvelopeResponseSerializer(serializers.Serializer):
+    session_id = serializers.CharField(max_length=64)
+    finished = serializers.BooleanField()
+    question = QuestionPayloadSerializer(required=False, allow_null=True)
+    progress = ProgressPayloadSerializer()
+    previous_answer = serializers.JSONField(required=False, allow_null=True)
+
+
+class SubmitAnswerResponseSerializer(serializers.Serializer):
+    recorded = serializers.BooleanField()
+    fact_key = serializers.CharField(required=False, allow_null=True, max_length=120)
+    fact_value = serializers.JSONField(required=False, allow_null=True)
+    next_node = serializers.CharField(required=False, allow_null=True, max_length=120)
+    is_finished = serializers.BooleanField()
+    progress = ProgressPayloadSerializer()
+
+
+class SessionStateResponseSerializer(serializers.Serializer):
+    session_id = serializers.CharField(max_length=64)
+    domain = serializers.CharField(max_length=16)
+    current_node_id = serializers.CharField(max_length=120)
+    kb_path = serializers.CharField(required=False, allow_null=True, allow_blank=True, max_length=500)
+    max_questions = serializers.IntegerField(required=False, allow_null=True)
+    answers = serializers.JSONField()
+    facts = serializers.JSONField()
+    history = serializers.ListField(child=serializers.CharField(), default=list)
+    presented_questions = serializers.JSONField()
+    answer_log = serializers.JSONField()
+    is_finished = serializers.BooleanField()
+    goal_filter = serializers.JSONField(required=False, allow_null=True)
+    final_output = serializers.JSONField(required=False, allow_null=True)
+    progress = ProgressPayloadSerializer()
+
+
+class GoalSummarySerializer(serializers.Serializer):
+    goal_id = serializers.CharField(max_length=120)
+    goal_name = serializers.CharField(max_length=255)
+    fit_score_percent = serializers.FloatField()
+
+
+class GapResolutionItemSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=255)
+    action = serializers.CharField()
+
+
+class FinalResultResponseSerializer(serializers.Serializer):
+    session_id = serializers.CharField(max_length=64)
+    domain = serializers.CharField(max_length=16)
+    selected_goal = GoalSummarySerializer(required=False, allow_null=True)
+    fit_score = serializers.FloatField(required=False, allow_null=True)
+    why_selected = serializers.ListField(child=serializers.CharField(), default=list)
+    strengths = serializers.ListField(child=serializers.CharField(), default=list)
+    alternative_goal = GoalSummarySerializer(required=False, allow_null=True)
+    gaps = serializers.ListField(child=serializers.CharField(), default=list)
+    gap_resolution_plan = GapResolutionItemSerializer(many=True, default=list)
+    next_steps = serializers.ListField(child=serializers.CharField(), default=list)
+    result = serializers.JSONField(default=dict)
